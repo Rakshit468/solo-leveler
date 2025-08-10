@@ -26,21 +26,28 @@ import { Server } from "socket.io";
 import connectDB from "./config/database.js";
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
 import socketHandler from "./sockets/socketHandler.js";
-
-// Import and configure passport
 import passport from "./config/passport.js";
+
 // Routes
 import authRoutes from "./routes/authRoutes.js";
 import questRoutes from "./routes/questRoutes.js";
 import statsRoutes from "./routes/statsRoutes.js";
 import skillRoutes from "./routes/skillRoutes.js";
 
-const app = express(); // ✅ create app before using it
+const app = express();
+
+// ✅ Trust proxy for Railway/Heroku/etc. (needed for Google OAuth redirects)
+app.set("trust proxy", 1);
+
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    origin: [
+      process.env.CORS_ORIGIN || "http://localhost:5173",
+      "http://localhost:5173", // allow local testing too
+    ],
     methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
   },
 });
 
@@ -51,7 +58,10 @@ connectDB();
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    origin: [
+      process.env.CORS_ORIGIN || "http://localhost:5173",
+      "http://localhost:5173",
+    ],
     credentials: true,
   })
 );
@@ -59,7 +69,7 @@ app.use(morgan("combined"));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// Initialize passport after core middleware
+// Passport init
 app.use(passport.initialize());
 
 // Make io accessible in routes
@@ -68,7 +78,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Add a request logger for debugging
+// Debug request logger
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   next();
@@ -80,7 +90,7 @@ app.use("/api/quests", questRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/skills", skillRoutes);
 
-// Simple test route for debugging
+// Test route
 app.get("/api/test", (req, res) => {
   res.status(200).send("API test route is working!");
 });

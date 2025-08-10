@@ -1,10 +1,10 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 // Create axios instance
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: `${API_BASE_URL}/api`,
   headers: {
     "Content-Type": "application/json",
   },
@@ -24,10 +24,10 @@ api.interceptors.request.use(
 
 // Auth API
 export const authAPI = {
-  register: (userData) => api.post("/auth/register", userData),
-  login: (credentials) => api.post("/auth/login", credentials),
-  getProfile: () => api.get("/auth/profile"),
-  updateProfile: (profileData) => api.put("/auth/profile", profileData),
+  register: (userData) => api.post("/api/auth/register", userData),
+  login: (credentials) => api.post("/api/auth/login", credentials),
+  getProfile: () => api.get("/api/auth/profile"),
+  updateProfile: (profileData) => api.put("/api/auth/profile", profileData),
 };
 
 // Quest API

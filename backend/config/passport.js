@@ -5,26 +5,30 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import crypto from "crypto";
 import User from "../models/User.js";
 
+// Automatically pick callback URL based on environment
+const isProduction = process.env.NODE_ENV === "production";
+const callbackBaseURL = isProduction
+  ? process.env.API_URL // e.g., https://solo-leveler-production.up.railway.app
+  : "http://localhost:5000";
+
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: `${
-        process.env.API_URL || "http://localhost:5000"
-      }/api/auth/google/callback`,
-      proxy: true,
+      callbackURL: `${callbackBaseURL}/api/auth/google/callback`,
+      proxy: true, // important for Railway/Heroku
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
         let user = await User.findOne({ "google.id": profile.id });
 
         if (!user) {
-          // Check if a user with this email already exists (e.g., local account)
+          // Check if a user with this email already exists
           user = await User.findOne({ email: profile.emails[0].value });
 
           if (user) {
-            // Link Google account to the existing local user
+            // Link Google account to the existing user
             user.google.id = profile.id;
             user.google.displayName = profile.displayName;
             await user.save();

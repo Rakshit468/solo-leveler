@@ -43,7 +43,7 @@ const Login = () => {
     const cleanBaseUrl = baseApiUrl.replace(/\/$/, "");
 
     // Construct the full Google auth URL, ensuring the /api prefix is present
-    const googleAuthUrl = `${cleanBaseUrl}/auth/google`;
+    const googleAuthUrl = `${cleanBaseUrl}/api/auth/google`;
 
     // DEBUG: Show the exact URL before redirecting
     alert(`Attempting to redirect to: ${googleAuthUrl}`);

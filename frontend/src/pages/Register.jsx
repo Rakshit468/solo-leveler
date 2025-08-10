@@ -201,7 +201,7 @@ const Register = () => {
           onClick={() =>
             (window.location.href = `${
               import.meta.env.VITE_API_URL || "/api"
-            }/api/auth/google`)
+            }/auth/google`)
           }
         >
           <img

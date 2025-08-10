@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { User, Mail, Lock, Sword } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
@@ -14,6 +14,7 @@ const Register = () => {
   });
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -30,6 +31,7 @@ const Register = () => {
 
     if (result.success) {
       toast.success("Welcome to the Guild, Hunter!");
+      navigate("/dashboard");
     } else {
       toast.error(result.error);
     }

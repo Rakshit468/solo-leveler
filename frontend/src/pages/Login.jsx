@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Sword, Mail, Lock } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
@@ -12,6 +12,7 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -28,6 +29,7 @@ const Login = () => {
 
     if (result.success) {
       toast.success("Welcome back, Hunter!");
+      navigate("/dashboard");
     } else {
       toast.error(result.error);
     }

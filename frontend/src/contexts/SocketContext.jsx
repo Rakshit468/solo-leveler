@@ -19,7 +19,7 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      const newSocket = io(import.meta.env.VITE_API_URL || "/api");
+      const newSocket = io(import.meta.env.VITE_API_URL);
 
       newSocket.on("connect", () => {
         console.log("🔌 Connected to server");

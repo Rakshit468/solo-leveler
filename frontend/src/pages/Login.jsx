@@ -45,6 +45,9 @@ const Login = () => {
     // Construct the full Google auth URL, ensuring the /api prefix is present
     const googleAuthUrl = `${cleanBaseUrl}/api/auth/google`;
 
+    // DEBUG: Show the exact URL before redirecting
+    alert(`Attempting to redirect to: ${googleAuthUrl}`);
+
     // Redirect browser to the Google OAuth endpoint
     window.location.href = googleAuthUrl;
   };

@@ -1,0 +1,259 @@
+import Quest from "../models/Quest.js";
+import User from "../models/User.js";
+import { validationResult } from "express-validator";
+
+export const getQuests = async (req, res) => {
+  try {
+    const { search, type, status, category, page = 1, limit = 20 } = req.query;
+
+    const filter = { user: req.user.id };
+    if (type) filter.type = type;
+    if (status) filter.status = status;
+    if (category) filter.category = category;
+
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const quests = await Quest.find(filter)
+      .sort({ priority: -1, createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .populate("user", "username character.name");
+
+    const total = await Quest.countDocuments(filter);
+
+    res.json({
+      success: true,
+      data: {
+        quests,
+        pagination: {
+          current: page,
+          pages: Math.ceil(total / limit),
+          total,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Get quests error:", error);
+    res.status(500).json({ message: "Server error fetching quests" });
+  }
+};
+
+export const createQuest = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const {
+      title,
+      description,
+      category,
+      type,
+      difficulty,
+      dueDate,
+      recurrence,
+      tags,
+      priority,
+    } = req.body;
+
+    const quest = new Quest({
+      user: req.user.id,
+      title,
+      description,
+      category,
+      type,
+      difficulty,
+      dueDate,
+      recurrence,
+      priority,
+      tags: tags || [],
+    });
+
+    // Calculate XP using the model method
+    quest.xpReward = quest.calculateXP();
+
+    await quest.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Quest created successfully",
+      data: quest,
+    });
+  } catch (error) {
+    console.error("Create quest error:", error);
+    res.status(500).json({ message: "Server error creating quest" });
+  }
+};
+
+export const updateQuest = async (req, res) => {
+  try {
+    const quest = await Quest.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+    });
+
+    if (!quest) {
+      return res.status(404).json({ message: "Quest not found" });
+    }
+
+    const {
+      title,
+      description,
+      category,
+      difficulty,
+      dueDate,
+      priority,
+      tags,
+    } = req.body;
+
+    if (title) quest.title = title;
+    if (description) quest.description = description;
+    if (category) quest.category = category;
+    if (difficulty) {
+      quest.difficulty = difficulty;
+      quest.xpReward = quest.calculateXP();
+    }
+    if (dueDate) quest.dueDate = dueDate;
+    if (priority) quest.priority = priority;
+    if (tags) quest.tags = tags;
+
+    await quest.save();
+
+    res.json({
+      success: true,
+      message: "Quest updated successfully",
+      data: quest,
+    });
+  } catch (error) {
+    console.error("Update quest error:", error);
+    res.status(500).json({ message: "Server error updating quest" });
+  }
+};
+
+export const completeQuest = async (req, res) => {
+  try {
+    const quest = await Quest.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+    });
+
+    if (!quest) {
+      return res.status(404).json({ message: "Quest not found" });
+    }
+
+    if (quest.status === "completed") {
+      return res.status(400).json({ message: "Quest already completed" });
+    }
+
+    // Complete the quest
+    quest.complete();
+    await quest.save();
+
+    // Update user XP and level using the new model method
+    const user = await User.findById(req.user.id);
+    const { leveledUp, newLevel, newXP } = await user.addXP(
+      quest.xpReward,
+      "quest",
+      quest._id,
+      `Completed quest: ${quest.title}`,
+      { questTitle: quest.title, multiplier: 1 }
+    );
+
+    // Emit real-time update
+    if (req.io) {
+      req.io.emit("questCompleted", {
+        userId: user._id,
+        questId: quest._id,
+        xpGained: quest.xpReward,
+        leveledUp,
+        newLevel,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Quest completed successfully!",
+      data: {
+        quest,
+        xpGained: quest.xpReward,
+        leveledUp,
+        newLevel,
+        newXP,
+      },
+    });
+  } catch (error) {
+    console.error("Complete quest error:", error);
+    res.status(500).json({ message: "Server error completing quest" });
+  }
+};
+
+export const deleteQuest = async (req, res) => {
+  try {
+    const quest = await Quest.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user.id,
+    });
+
+    if (!quest) {
+      return res.status(404).json({
+        success: false,
+        message: "Quest not found or you do not have permission to delete it",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Quest deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete quest error:", error);
+    res.status(500).json({ message: "Server error deleting quest" });
+  }
+};
+
+export const getDashboardData = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get quest statistics
+    const [dailyQuests, weeklyQuests, bossQuests, completedToday] =
+      await Promise.all([
+        Quest.find({ user: userId, type: "daily", status: "active" }),
+        Quest.find({ user: userId, type: "weekly", status: "active" }),
+        Quest.find({ user: userId, type: "boss", status: "active" }),
+        Quest.countDocuments({
+          user: userId,
+          status: "completed",
+          completedAt: { $gte: new Date().setHours(0, 0, 0, 0) },
+        }),
+      ]);
+
+    // Get recent XP activity
+    const recentActivity = await XPLog.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .populate("sourceId");
+
+    res.json({
+      success: true,
+      data: {
+        quests: {
+          daily: dailyQuests,
+          weekly: weeklyQuests,
+          boss: bossQuests,
+          completedToday,
+        },
+        recentActivity,
+      },
+    });
+  } catch (error) {
+    console.error("Get dashboard data error:", error);
+    res.status(500).json({ message: "Server error fetching dashboard data" });
+  }
+};

@@ -200,7 +200,7 @@ const Register = () => {
           className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-lg border border-dark-700 bg-white hover:bg-gray-100 transition-colors shadow-sm mb-6"
           onClick={() =>
             (window.location.href = `${
-              import.meta.env.VITE_API_URL || "http://localhost:5000"
+              import.meta.env.VITE_API_URL || "/api"
             }/api/auth/google`)
           }
         >

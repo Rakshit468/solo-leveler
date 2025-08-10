@@ -37,6 +37,20 @@ const Register = () => {
     setLoading(false);
   };
 
+  const handleGoogleLogin = () => {
+    // Get base API URL from env
+    const baseApiUrl = import.meta.env.VITE_API_URL;
+
+    // Remove trailing slash if any to avoid double slash
+    const cleanBaseUrl = baseApiUrl.replace(/\/$/, "");
+
+    // Construct the full Google auth URL, ensuring the /api prefix is present
+    const googleAuthUrl = `${cleanBaseUrl}/api/auth/google`;
+
+    // Redirect browser to the Google OAuth endpoint
+    window.location.href = googleAuthUrl;
+  };
+
   return (
     <div className="min-h-screen bg-dark-900 flex items-center justify-center px-4 py-12">
       <motion.div
@@ -198,11 +212,7 @@ const Register = () => {
         {/* Google Sign Up Button */}
         <button
           className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-lg border border-dark-700 bg-white hover:bg-gray-100 transition-colors shadow-sm mb-6"
-          onClick={() =>
-            (window.location.href = `${
-              import.meta.env.VITE_API_URL
-            }/auth/google`)
-          }
+          onClick={handleGoogleLogin}
         >
           <img
             src="https://www.svgrepo.com/show/475656/google-color.svg"

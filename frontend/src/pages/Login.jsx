@@ -35,16 +35,15 @@ const Login = () => {
     setLoading(false);
   };
 
-  // New function to handle Google OAuth redirect safely
   const handleGoogleLogin = () => {
-    // Get base API URL from env or default to empty string (no "/api" by default)
+    // Get base API URL from env
     const baseApiUrl = import.meta.env.VITE_API_URL;
 
     // Remove trailing slash if any to avoid double slash
     const cleanBaseUrl = baseApiUrl.replace(/\/$/, "");
 
-    // Construct the full Google auth URL (with /api/auth/google path)
-    const googleAuthUrl = `${cleanBaseUrl}/auth/google`;
+    // Construct the full Google auth URL, ensuring the /api prefix is present
+    const googleAuthUrl = `${cleanBaseUrl}/api/auth/google`;
 
     // Redirect browser to the Google OAuth endpoint
     window.location.href = googleAuthUrl;

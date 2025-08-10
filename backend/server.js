@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+console.log("MONGODB_URI from env:", JSON.stringify(process.env.MONGODB_URI));
+
 // Check for required environment variables
 const requiredEnv = [
   "MONGODB_URI",

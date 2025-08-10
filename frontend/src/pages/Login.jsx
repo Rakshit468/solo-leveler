@@ -35,6 +35,21 @@ const Login = () => {
     setLoading(false);
   };
 
+  // New function to handle Google OAuth redirect safely
+  const handleGoogleLogin = () => {
+    // Get base API URL from env or default to empty string (no "/api" by default)
+    const baseApiUrl = import.meta.env.VITE_API_URL || "";
+
+    // Remove trailing slash if any to avoid double slash
+    const cleanBaseUrl = baseApiUrl.replace(/\/$/, "");
+
+    // Construct the full Google auth URL (with /api/auth/google path)
+    const googleAuthUrl = `${cleanBaseUrl}/api/auth/google`;
+
+    // Redirect browser to the Google OAuth endpoint
+    window.location.href = googleAuthUrl;
+  };
+
   return (
     <div className="min-h-screen bg-dark-900 flex items-center justify-center px-4">
       <motion.div
@@ -152,11 +167,7 @@ const Login = () => {
         {/* Google Login Button */}
         <button
           className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-lg border border-dark-700 bg-white hover:bg-gray-100 transition-colors shadow-sm mb-6"
-          onClick={() =>
-            (window.location.href = `${
-              import.meta.env.VITE_API_URL || "/api"
-            }/auth/google`)
-          }
+          onClick={handleGoogleLogin}
         >
           <img
             src="https://www.svgrepo.com/show/475656/google-color.svg"

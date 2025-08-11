@@ -63,9 +63,13 @@ router.get(
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
-// Google OAuth callback
+// Google OAuth callback with logging middleware
 router.get(
   "/google/callback",
+  (req, res, next) => {
+    console.log("Google OAuth callback route hit");
+    next();
+  },
   passport.authenticate("google", {
     session: false,
     failureRedirect: process.env.CLIENT_URL || "http://localhost:5173/login",

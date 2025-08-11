@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import path from "path";
 
 export default defineConfig({
   plugins: [react()],
@@ -14,5 +15,9 @@ export default defineConfig({
             },
           }
         : undefined,
+  },
+  build: {
+    outDir: path.resolve(__dirname, "frontend/dist"),
+    emptyOutDir: true, // Ensure the directory is empty before building
   },
 });

@@ -4,6 +4,7 @@ import path from "path";
 
 export default defineConfig({
   plugins: [react()],
+  base: "/",
   server: {
     port: 5173,
     proxy:
@@ -17,7 +18,7 @@ export default defineConfig({
         : undefined,
   },
   build: {
-    outDir: path.resolve(__dirname, "frontend/dist"),
+    outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true, // Ensure the directory is empty before building
   },
 });

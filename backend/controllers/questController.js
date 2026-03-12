@@ -167,27 +167,30 @@ export const completeQuest = async (req, res) => {
       { questTitle: quest.title, multiplier: 1 }
     );
 
-    // Update streaks so dashboard can show accurate progress
-    const today = new Date();
+    // Update streak info
+    const now = new Date();
+    const today = new Date(now);
     today.setHours(0, 0, 0, 0);
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    if (!user.streaks.lastActivity) {
-      user.streaks.current = 1;
-      user.streaks.longest = Math.max(user.streaks.longest, 1);
-    } else {
+    if (user.streaks.lastActivity) {
       const lastActivity = new Date(user.streaks.lastActivity);
       lastActivity.setHours(0, 0, 0, 0);
 
       if (lastActivity.getTime() === yesterday.getTime()) {
         user.streaks.current += 1;
-      } else if (lastActivity.getTime() < yesterday.getTime()) {
+      } else if (lastActivity.getTime() === today.getTime()) {
+        user.streaks.current = Math.max(user.streaks.current, 1);
+      } else {
         user.streaks.current = 1;
       }
-      user.streaks.longest = Math.max(user.streaks.longest, user.streaks.current);
+    } else {
+      user.streaks.current = 1;
     }
-    user.streaks.lastActivity = new Date();
+
+    user.streaks.longest = Math.max(user.streaks.longest, user.streaks.current);
+    user.streaks.lastActivity = now;
     await user.save();
 
     // Update skill progress for skills in the same category as the quest

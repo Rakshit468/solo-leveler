@@ -86,7 +86,7 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Update streak information on login
+    // Update streak info
     const now = new Date();
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);
@@ -99,7 +99,9 @@ export const login = async (req, res) => {
 
       if (lastActivity.getTime() === yesterday.getTime()) {
         user.streaks.current += 1;
-      } else if (lastActivity.getTime() < yesterday.getTime()) {
+      } else if (lastActivity.getTime() === today.getTime()) {
+        user.streaks.current = Math.max(user.streaks.current, 1);
+      } else {
         user.streaks.current = 1;
       }
     } else {
@@ -149,7 +151,7 @@ export const getProfile = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const { characterName, avatar, preferences } = req.body;
-    
+
     const updateFields = {};
     if (characterName) updateFields['character.name'] = characterName;
     if (avatar) updateFields['character.avatar'] = avatar;

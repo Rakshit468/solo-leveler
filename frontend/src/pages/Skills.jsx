@@ -30,6 +30,10 @@ const Skills = () => {
 
   useEffect(() => {
     loadSkills()
+
+    const reloadHandler = () => loadSkills()
+    window.addEventListener("reload-skills", reloadHandler)
+    return () => window.removeEventListener("reload-skills", reloadHandler)
   }, [selectedCategory])
 
   const loadSkills = async () => {

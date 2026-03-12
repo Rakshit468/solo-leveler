@@ -186,6 +186,7 @@ userSchema.methods.addXP = async function (
     leveledUp: newLevel > previousLevel,
     newLevel: this.character.level,
     newXP: this.character.xp,
+    newXPToNextLevel: this.character.xpToNextLevel,
   };
 };
 

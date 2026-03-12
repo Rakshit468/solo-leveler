@@ -1,5 +1,7 @@
 import Quest from "../models/Quest.js";
 import User from "../models/User.js";
+import XPLog from "../models/XPLog.js";
+import { UserSkill } from "../models/Skill.js";
 import { validationResult } from "express-validator";
 
 export const getQuests = async (req, res) => {
@@ -157,13 +159,55 @@ export const completeQuest = async (req, res) => {
 
     // Update user XP and level using the new model method
     const user = await User.findById(req.user.id);
-    const { leveledUp, newLevel, newXP } = await user.addXP(
+    const { leveledUp, newLevel, newXP, newXPToNextLevel } = await user.addXP(
       quest.xpReward,
       "quest",
       quest._id,
       `Completed quest: ${quest.title}`,
       { questTitle: quest.title, multiplier: 1 }
     );
+
+    // Update streaks so dashboard can show accurate progress
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (!user.streaks.lastActivity) {
+      user.streaks.current = 1;
+      user.streaks.longest = Math.max(user.streaks.longest, 1);
+    } else {
+      const lastActivity = new Date(user.streaks.lastActivity);
+      lastActivity.setHours(0, 0, 0, 0);
+
+      if (lastActivity.getTime() === yesterday.getTime()) {
+        user.streaks.current += 1;
+      } else if (lastActivity.getTime() < yesterday.getTime()) {
+        user.streaks.current = 1;
+      }
+      user.streaks.longest = Math.max(user.streaks.longest, user.streaks.current);
+    }
+    user.streaks.lastActivity = new Date();
+    await user.save();
+
+    // Update skill progress for skills in the same category as the quest
+    const userSkills = await UserSkill.find({ user: user._id }).populate("skill");
+    const relatedSkills = userSkills.filter((us) => us.skill.category === quest.category);
+
+    const updatedSkills = [];
+    for (const userSkill of relatedSkills) {
+      const xpGainedForSkill = Math.max(5, Math.round(quest.xpReward * 0.2));
+      userSkill.experience += xpGainedForSkill;
+
+      const xpToLevel = (level) => 100 * level;
+      while (userSkill.experience >= xpToLevel(userSkill.level) && userSkill.level < 10) {
+        userSkill.experience -= xpToLevel(userSkill.level);
+        userSkill.level += 1;
+      }
+
+      await userSkill.save();
+      updatedSkills.push(userSkill);
+    }
 
     // Emit real-time update
     if (req.io) {
@@ -173,7 +217,14 @@ export const completeQuest = async (req, res) => {
         xpGained: quest.xpReward,
         leveledUp,
         newLevel,
+        streaks: user.streaks,
       });
+      if (updatedSkills.length > 0) {
+        req.io.emit("skillProgress", {
+          userId: user._id,
+          updatedSkills,
+        });
+      }
     }
 
     res.json({
@@ -185,6 +236,9 @@ export const completeQuest = async (req, res) => {
         leveledUp,
         newLevel,
         newXP,
+        newXPToNextLevel,
+        streaks: user.streaks,
+        updatedSkills,
       },
     });
   } catch (error) {

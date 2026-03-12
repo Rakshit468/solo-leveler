@@ -86,8 +86,28 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Update last login
-    user.streaks.lastActivity = new Date();
+    // Update streak information on login
+    const now = new Date();
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (user.streaks.lastActivity) {
+      const lastActivity = new Date(user.streaks.lastActivity);
+      lastActivity.setHours(0, 0, 0, 0);
+
+      if (lastActivity.getTime() === yesterday.getTime()) {
+        user.streaks.current += 1;
+      } else if (lastActivity.getTime() < yesterday.getTime()) {
+        user.streaks.current = 1;
+      }
+    } else {
+      user.streaks.current = 1;
+    }
+
+    user.streaks.longest = Math.max(user.streaks.longest, user.streaks.current);
+    user.streaks.lastActivity = now;
     await user.save();
 
     const token = generateToken(user._id);

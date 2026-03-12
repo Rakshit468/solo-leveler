@@ -1,3 +1,11 @@
 {
-  "CodeGPT.apiKey": "Google AI Studio"
+  "CodeGPT.apiKey": "Google AI Studio",
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    ".mule": true
+  }
 }

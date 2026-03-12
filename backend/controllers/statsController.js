@@ -97,20 +97,64 @@ export const getLeaderboard = async (req, res) => {
         )
         .sort({ "character.level": -1, "character.xp": -1 })
         .limit(parseInt(limit));
-    } else {
-      // Get leaderboard from LeaderboardEntry collection for specific periods
-      leaderboard = await LeaderboardEntry.find({ type })
-        .populate("user", "username character.name character.avatar")
-        .sort({ rank: 1 })
-        .limit(parseInt(limit));
-    }
 
-    // Add rank to overall leaderboard
-    if (type === "overall") {
       leaderboard = leaderboard.map((user, index) => ({
         ...user.toObject(),
         rank: index + 1,
       }));
+    } else if (type === "weekly" || type === "monthly") {
+      const daysBack = type === "weekly" ? 7 : 30;
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - daysBack);
+
+      leaderboard = await XPLog.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: startDate },
+          },
+        },
+        {
+          $group: {
+            _id: "$user",
+            totalXP: { $sum: "$amount" },
+            questsCompleted: {
+              $sum: {
+                $cond: [{ $eq: ["$source", "quest"] }, 1, 0],
+              },
+            },
+          },
+        },
+        { $sort: { totalXP: -1 } },
+        { $limit: parseInt(limit) },
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "user",
+          },
+        },
+        { $unwind: "$user" },
+        {
+          $project: {
+            user: 1,
+            score: "$totalXP",
+            totalXP: 1,
+            questsCompleted: 1,
+          },
+        },
+      ]);
+
+      leaderboard = leaderboard.map((entry, index) => ({
+        ...entry,
+        rank: index + 1,
+      }));
+    } else {
+      // Get leaderboard from LeaderboardEntry collection for other custom types
+      leaderboard = await LeaderboardEntry.find({ type })
+        .populate("user", "username character.name character.avatar")
+        .sort({ rank: 1 })
+        .limit(parseInt(limit));
     }
 
     res.json({

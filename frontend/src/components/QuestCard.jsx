@@ -40,19 +40,22 @@ const QuestCard = ({ quest, onQuestComplete }) => {
           </div>
         );
 
-        // Update user data
+        // Update user data (XP, level, streaks)
         updateUser({
           character: {
             xp: newXP,
             level: newLevel,
+            xpToNextLevel: response.data.data.newXPToNextLevel,
           },
+          streaks: response.data.data.streaks,
         });
 
         if (onQuestComplete) {
           onQuestComplete(quest._id);
         }
-        // Dispatch event to reload analytics
+        // Dispatch events to reload dependent UI
         window.dispatchEvent(new Event("reload-analytics"));
+        window.dispatchEvent(new Event("reload-skills"));
       }
     } catch (error) {
       console.error("Error completing quest:", error);

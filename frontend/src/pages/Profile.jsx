@@ -6,15 +6,15 @@ import toast from "react-hot-toast";
 
 const avatarOptions = [
   "default-avatar.png",
-  "warrior-avatar.png",
-  "mage-avatar.png",
-  "rogue-avatar.png",
-  "paladin-avatar.png",
-  "archer-avatar.png",
-  "healer-avatar.png",
-  "knight-avatar.png",
-  "ninja-avatar.png",
-  "samurai-avatar.png",
+  "warrior-avatar.svg",
+  "mage-avatar.svg",
+  "rogue-avatar.svg",
+  "paladin-avatar.svg",
+  "archer-avatar.svg",
+  "healer-avatar.svg",
+  "knight-avatar.svg",
+  "ninja-avatar.svg",
+  "samurai-avatar.svg",
 ];
 
 const Profile = () => {

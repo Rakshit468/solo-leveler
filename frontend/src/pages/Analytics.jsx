@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   BarChart,
@@ -33,7 +32,6 @@ const Analytics = () => {
   const [analytics, setAnalytics] = useState(null);
   const [period, setPeriod] = useState("30");
   const [loading, setLoading] = useState(true);
-  const location = useLocation();
 
   const periods = [
     { value: "7", label: "7 Days" },
@@ -42,26 +40,28 @@ const Analytics = () => {
   ];
 
   useEffect(() => {
-    loadAnalytics();
+    const fetchAnalytics = async () => {
+      setLoading(true);
+      try {
+        const response = await statsAPI.getAnalytics({ period });
+        setAnalytics(response.data.data);
+      } catch (error) {
+        console.error("Error loading analytics:", error);
+        setAnalytics(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+
     // Listen for analytics reload events
-    const reloadHandler = () => loadAnalytics();
+    const reloadHandler = () => fetchAnalytics();
     window.addEventListener("reload-analytics", reloadHandler);
     return () => {
       window.removeEventListener("reload-analytics", reloadHandler);
     };
-  }, [period, location.pathname]);
-
-  const loadAnalytics = async () => {
-    setLoading(true);
-    try {
-      const response = await statsAPI.getAnalytics({ period });
-      setAnalytics(response.data.data);
-    } catch (error) {
-      console.error("Error loading analytics:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [period]);
 
   if (loading) {
     return (

@@ -29,25 +29,25 @@ const Skills = () => {
   ]
 
   useEffect(() => {
-    loadSkills()
+    const fetchSkills = async () => {
+      try {
+        const params = selectedCategory !== 'all' ? { category: selectedCategory } : {}
+        const response = await skillsAPI.getSkills(params)
+        setSkills(response.data.data.skills)
+      } catch (error) {
+        console.error('Error loading skills:', error)
+        toast.error('Failed to load skills')
+      } finally {
+        setLoading(false)
+      }
+    }
 
-    const reloadHandler = () => loadSkills()
+    fetchSkills()
+
+    const reloadHandler = () => fetchSkills()
     window.addEventListener("reload-skills", reloadHandler)
     return () => window.removeEventListener("reload-skills", reloadHandler)
   }, [selectedCategory])
-
-  const loadSkills = async () => {
-    try {
-      const params = selectedCategory !== 'all' ? { category: selectedCategory } : {}
-      const response = await skillsAPI.getSkills(params)
-      setSkills(response.data.data.skills)
-    } catch (error) {
-      console.error('Error loading skills:', error)
-      toast.error('Failed to load skills')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleUnlockSkill = async (skill) => {
     try {

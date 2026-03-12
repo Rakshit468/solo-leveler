@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Skill, UserSkill } from '../models/Skill.js';
 import User from '../models/User.js';
 
@@ -8,7 +9,13 @@ export const getSkills = async (req, res) => {
     if (category) filter.category = category;
 
     const skills = await Skill.find(filter).sort({ category: 1, tier: 1 });
-    const userSkills = await UserSkill.find({ user: req.user.id }).populate('skill');
+    
+    // Convert userId to ObjectId for consistent querying
+    const userObjectId = typeof req.user.id === 'string' 
+      ? new mongoose.Types.ObjectId(req.user.id)
+      : req.user.id;
+    
+    const userSkills = await UserSkill.find({ user: userObjectId }).populate('skill');
 
     // Combine skills with user progress
     const skillsWithProgress = skills.map(skill => {

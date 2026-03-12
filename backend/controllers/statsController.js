@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import User from "../models/User.js";
 import Quest from "../models/Quest.js";
 import XPLog from "../models/XPLog.js";
@@ -221,11 +222,16 @@ export const getAnalytics = async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysBack);
 
+    // Convert userId to ObjectId for Mongoose aggregation
+    const userObjectId = typeof userId === 'string' 
+      ? new mongoose.Types.ObjectId(userId)
+      : userId;
+
     // XP over time
     const xpOverTime = await XPLog.aggregate([
       {
         $match: {
-          user: userId,
+          user: userObjectId,
           createdAt: { $gte: startDate },
         },
       },
@@ -249,7 +255,7 @@ export const getAnalytics = async (req, res) => {
     const categoryPerformance = await Quest.aggregate([
       {
         $match: {
-          user: userId,
+          user: userObjectId,
           createdAt: { $gte: startDate },
         },
       },
@@ -289,7 +295,7 @@ export const getAnalytics = async (req, res) => {
     const streakData = await XPLog.aggregate([
       {
         $match: {
-          user: userId,
+          user: userObjectId,
           createdAt: { $gte: startDate },
         },
       },

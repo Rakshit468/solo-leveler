@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Settings as SettingsIcon, Volume2, Eye, Bell, Moon, Sun, Palette, Lock } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
@@ -18,6 +18,16 @@ const Settings = () => {
     },
     colorTheme: localStorage.getItem("colorTheme") || "purple",
   });
+
+  // Apply theme on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") || "dark";
+    if (savedTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
 
   const handleNotificationChange = (key) => {
     const newSettings = {
@@ -40,7 +50,13 @@ const Settings = () => {
   const handleThemeChange = (theme) => {
     setSettings({ ...settings, theme });
     localStorage.setItem("theme", theme);
-    document.documentElement.classList.toggle("dark", theme === "dark");
+    
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    
     toast.success(`Theme changed to ${theme}!`);
   };
 

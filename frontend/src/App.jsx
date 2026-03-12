@@ -23,6 +23,16 @@ import AuthCallback from "./pages/AuthCallback";
 function App() {
   const { user, loading } = useAuth();
 
+  // Initialize theme on mount
+  React.useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") || "dark";
+    if (savedTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-dark-900 flex items-center justify-center">

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Check, Clock, Star, Target } from "lucide-react";
 import { questAPI } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
+import { useNotifications } from "../contexts/NotificationContext";
 import toast from "react-hot-toast";
 import clsx from "clsx";
 
@@ -22,6 +23,7 @@ const typeIcons = {
 
 const QuestCard = ({ quest, onQuestComplete }) => {
   const { updateUser } = useAuth();
+  const { addNotification } = useNotifications();
   const [loading, setLoading] = React.useState(false);
 
   const Icon = typeIcons[quest.type];
@@ -32,6 +34,24 @@ const QuestCard = ({ quest, onQuestComplete }) => {
       const response = await questAPI.completeQuest(quest._id);
       if (response.data.success) {
         const { xpGained, leveledUp, newLevel, newXP } = response.data.data;
+
+        // Add notification
+        addNotification({
+          type: "quest",
+          title: "Quest Completed!",
+          message: `${quest.title} complete! +${xpGained} XP`,
+          persistent: false,
+        });
+
+        // Add level up notification if applicable
+        if (leveledUp) {
+          addNotification({
+            type: "success",
+            title: "⭐ Level Up!",
+            message: `You reached Level ${newLevel}!`,
+            persistent: false,
+          });
+        }
 
         toast.success(
           <div>

@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useAuth } from "./contexts/AuthContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 
 // Components
 import Layout from "./components/Layout";
@@ -16,6 +17,7 @@ import Skills from "./pages/Skills";
 import Leaderboard from "./pages/Leaderboard";
 import Analytics from "./pages/Analytics";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import AuthCallback from "./pages/AuthCallback";
 
 function App() {
@@ -30,45 +32,48 @@ function App() {
   }
 
   return (
-    <>
-      <Routes>
-        {/* Public Routes */}
-        <Route
-          path="/login"
-          element={!user ? <Login /> : <Navigate to="/dashboard" />}
-        />
-        <Route
-          path="/register"
-          element={!user ? <Register /> : <Navigate to="/dashboard" />}
-        />
-        <Route path="/auth/callback" element={<AuthCallback />} />
+    <NotificationProvider>
+      <>
+        <Routes>
+          {/* Public Routes */}
+          <Route
+            path="/login"
+            element={!user ? <Login /> : <Navigate to="/dashboard" />}
+          />
+          <Route
+            path="/register"
+            element={!user ? <Register /> : <Navigate to="/dashboard" />}
+          />
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* Protected Routes */}
-        <Route path="/" element={user ? <Layout /> : <Navigate to="/login" />}>
-          <Route path="/" element={<Navigate to="/dashboard" />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/quests" element={<Quests />} />
-          <Route path="/skills" element={<Skills />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/profile" element={<Profile />} />
-        </Route>
-      </Routes>
+          {/* Protected Routes */}
+          <Route path="/" element={user ? <Layout /> : <Navigate to="/login" />}>
+            <Route path="/" element={<Navigate to="/dashboard" />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/quests" element={<Quests />} />
+            <Route path="/skills" element={<Skills />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
+        </Routes>
 
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          className: "bg-dark-800 text-white border border-primary-500",
-          success: {
-            className: "bg-success-500 text-white",
-          },
-          error: {
-            className: "bg-error-500 text-white",
-          },
-        }}
-      />
-    </>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            className: "bg-dark-800 text-white border border-primary-500",
+            success: {
+              className: "bg-success-500 text-white",
+            },
+            error: {
+              className: "bg-error-500 text-white",
+            },
+          }}
+        />
+      </>
+    </NotificationProvider>
   );
 }
 

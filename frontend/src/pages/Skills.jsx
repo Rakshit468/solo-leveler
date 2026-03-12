@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Zap, Lock, CheckCircle, Star } from 'lucide-react'
 import { skillsAPI } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
+import { useNotifications } from '../contexts/NotificationContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
@@ -16,6 +17,7 @@ const categoryColors = {
 
 const Skills = () => {
   const { user, updateUser } = useAuth()
+  const { addNotification } = useNotifications()
   const [skills, setSkills] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [loading, setLoading] = useState(true)
@@ -59,6 +61,14 @@ const Skills = () => {
             ? { ...s, unlocked: true, level: 1, unlockedAt: new Date() }
             : s
         ))
+
+        // Add notification
+        addNotification({
+          type: 'skill',
+          title: '🔓 Skill Unlocked!',
+          message: `You unlocked "${skill.name}"!`,
+          persistent: false,
+        })
 
         // Update user stats
         const { updatedStats } = response.data.data

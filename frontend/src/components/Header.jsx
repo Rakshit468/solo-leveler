@@ -1,10 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import { Bell, LogOut, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useNotifications } from "../contexts/NotificationContext";
+import NotificationPanel from "./NotificationPanel";
 import toast from "react-hot-toast";
 
 const Header = () => {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { notifications } = useNotifications();
+  const [notificationOpen, setNotificationOpen] = useState(false);
 
   const handleLogout = () => {
     toast.success("Logged out successfully");
@@ -51,10 +57,21 @@ const Header = () => {
               </div>
             </>
           )}
-          <button className="p-2 text-gray-400 hover:text-white transition-colors">
+          <button 
+            onClick={() => setNotificationOpen(!notificationOpen)}
+            className="relative p-2 text-gray-400 hover:text-white transition-colors"
+          >
             <Bell className="h-5 w-5" />
+            {notifications.length > 0 && (
+              <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                {notifications.length > 9 ? "9+" : notifications.length}
+              </span>
+            )}
           </button>
-          <button className="p-2 text-gray-400 hover:text-white transition-colors">
+          <button 
+            onClick={() => navigate("/settings")}
+            className="p-2 text-gray-400 hover:text-white transition-colors"
+          >
             <Settings className="h-5 w-5" />
           </button>
           <button
@@ -65,6 +82,7 @@ const Header = () => {
           </button>
         </div>
       </div>
+      <NotificationPanel isOpen={notificationOpen} onClose={() => setNotificationOpen(false)} />
     </header>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Plus, Filter, Search } from "lucide-react";
 import { questAPI } from "../services/api";
+import { useNotifications } from "../contexts/NotificationContext";
 import QuestCard from "../components/QuestCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 import CreateQuestModal from "../components/CreateQuestModal";
@@ -9,6 +10,7 @@ import toast from "react-hot-toast";
 import { useDebounce } from "../hooks/useDebounce";
 
 const Quests = () => {
+  const { addNotification } = useNotifications();
   const [quests, setQuests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -65,6 +67,15 @@ const Quests = () => {
   const handleQuestCreate = (newQuest) => {
     setQuests((prev) => [newQuest, ...prev]);
     setShowCreateModal(false);
+    
+    // Add notification
+    addNotification({
+      type: "quest",
+      title: "🎯 New Quest Created!",
+      message: `${newQuest.title} has been added to your quests!`,
+      persistent: false,
+    });
+    
     toast.success("Quest created successfully!");
   };
 

@@ -1,0 +1,44 @@
+[33mb1018da4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Tried to fix the theme issue.
+[33mf26bcdf5[m yet another vercel.json modify
+[33m490e45d3[m yet another vercel.json modify
+[33mae4e3cb9[m yet another vercel.json modify
+[33mc9f68ad7[m yet another vercel.json modify
+[33m07eed903[m fixed issues with dist folder
+[33m2ae7c453[m bug testing
+[33mcb2beb80[m routing modified in vercel.json
+[33ma526298c[m vite.config.js modified
+[33m3f4ccc2d[m minor changes made
+[33m539eb513[m frontend fix test
+[33m5769d19d[m duplicate dist folder deleted
+[33m3f43324d[m modified package.json in root
+[33m019c45bd[m modified vercel.json
+[33m358bcade[m moved vercel.json to root
+[33m4b117d06[m authroute.js updated for testing backend callback
+[33m2f95b099[m fixed some issues
+[33mdffa3dad[m fixed some issues
+[33m07202375[m deleted vercel.json
+[33maacb776f[m fix vercel.json
+[33m09f39155[m modified vercel.json
+[33m43172778[m  created vercel.json
+[33mafc0ae8e[m made changes in api.js
+[33m7bda9cdb[m changed routes
+[33me6149d39[m corrected filename vercel.json
+[33m43bd520c[m modified frontend
+[33mdcdf6c08[m some minor fixes
+[33m8e65db03[m modified googleauth in login.jsx
+[33m9e707d1e[m updated index.html
+[33m3dd3eb32[m modified login.jsx
+[33m4d35ed96[m modified register.jsx
+[33m74d40e44[m fixed double api prefix issue
+[33m09fdab18[m redirecting google sign up / sign in fixed
+[33m287624b5[m .env changed
+[33md44d6640[m Api redirect fixed
+[33md223e692[m api issues fixed
+[33md30972a9[m redirect issue fixed
+[33m2af1d0f2[m fixed connection issues in server.js
+[33mbf220494[m google sign up/sign in fixed
+[33meeac1cc0[m bugs fixed
+[33m52873a6e[m Deployment done
+[33mb06014da[m init
+[33m79f6e221[m added intro in Readme.txt
+[33m3ef34c68[m hello

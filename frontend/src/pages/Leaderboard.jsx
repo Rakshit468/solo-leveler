@@ -102,20 +102,20 @@ const Leaderboard = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white">Leaderboard</h1>
+        <h1 className="text-2xl font-bold text-white sm:text-3xl">Leaderboard</h1>
         <p className="text-gray-400 mt-2">
           See how you stack up against other hunters
         </p>
       </div>
 
       {/* Type Selector */}
-      <div className="flex space-x-1 bg-dark-800 p-1 rounded-lg">
+      <div className="flex space-x-1 overflow-x-auto bg-dark-800 p-1 rounded-lg">
         {leaderboardTypes.map((type) => (
           <button
             key={type.key}
             onClick={() => setSelectedType(type.key)}
             className={clsx(
-              "flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center justify-center space-x-2",
+              "flex-1 whitespace-nowrap px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center justify-center space-x-2",
               selectedType === type.key
                 ? "bg-primary-600 text-white"
                 : "text-gray-400 hover:text-white hover:bg-dark-700"
@@ -165,7 +165,7 @@ const Leaderboard = () => {
 
       {/* Top 3 Podium */}
       {leaderboard.length >= 3 && (
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="hidden md:grid md:grid-cols-3 md:gap-4 md:mb-8">
           {/* 2nd Place */}
           <motion.div
             className="text-center"
@@ -260,7 +260,7 @@ const Leaderboard = () => {
             <motion.div
               key={entry.id}
               className={clsx(
-                "flex items-center justify-between p-4 rounded-lg transition-colors",
+                "flex flex-col gap-3 rounded-lg p-4 transition-colors sm:flex-row sm:items-center sm:justify-between",
                 isCurrentUser(entry)
                   ? "bg-primary-500/20 border border-primary-500/50"
                   : "bg-dark-700 hover:bg-dark-600"
@@ -297,11 +297,11 @@ const Leaderboard = () => {
                 </div>
               </div>
 
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <div className="font-semibold text-primary-400">
                   {entry.xp} XP
                 </div>
-                <div className="text-sm text-yellow-400 flex items-center justify-end">
+                <div className="text-sm text-yellow-400 flex items-center sm:justify-end">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-4 w-4 mr-1"

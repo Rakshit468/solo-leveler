@@ -55,7 +55,7 @@ const CreateQuestModal = ({ onClose, onQuestCreate }) => {
       exit={{ opacity: 0 }}
     >
       <motion.div 
-        className="bg-dark-800 rounded-xl p-6 w-full max-w-md border border-dark-700"
+        className="bg-dark-800 rounded-xl p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto border border-dark-700"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
@@ -108,7 +108,7 @@ const CreateQuestModal = ({ onClose, onQuestCreate }) => {
           </div>
 
           {/* Category & Type */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Category
@@ -136,7 +136,7 @@ const CreateQuestModal = ({ onClose, onQuestCreate }) => {
           </div>
 
           {/* Difficulty & Priority */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Difficulty
@@ -208,7 +208,7 @@ const CreateQuestModal = ({ onClose, onQuestCreate }) => {
           </div>
 
           {/* Actions */}
-          <div className="flex space-x-3 pt-4">
+          <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:space-x-3 sm:gap-0">
             <button
               type="button"
               onClick={onClose}

@@ -90,16 +90,16 @@ const Quests = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Quests</h1>
+          <h1 className="text-2xl font-bold text-white sm:text-3xl">Quests</h1>
           <p className="text-gray-400 mt-2">
             Manage your quests and track progress
           </p>
         </div>
         <motion.button
           onClick={() => setShowCreateModal(true)}
-          className="btn-primary"
+          className="btn-primary w-full sm:w-auto"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >

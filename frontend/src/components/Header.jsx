@@ -18,18 +18,18 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-dark-800 border-b border-dark-700 px-6 py-4">
+    <header className="bg-dark-800 border-b border-dark-700 px-4 py-3 sm:px-6 sm:py-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-white">
+        <div className="min-w-0 pr-3">
+          <h2 className="text-lg font-bold text-white sm:text-2xl truncate">
             Welcome back, Hunter!
           </h2>
-          <p className="text-gray-400">Ready to level up your life?</p>
+          <p className="hidden text-gray-400 sm:block">Ready to level up your life?</p>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           {user && (
             <>
-              <div className="flex items-center space-x-2">
+              <div className="hidden items-center space-x-2 sm:flex">
                 <img
                   src={`/avatars/${
                     user.character?.avatar || "default-avatar.png"
@@ -57,7 +57,7 @@ const Header = () => {
               </div>
             </>
           )}
-          <button 
+          <button
             onClick={() => setNotificationOpen(!notificationOpen)}
             className="relative p-2 text-gray-400 hover:text-white transition-colors"
           >

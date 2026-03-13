@@ -26,7 +26,7 @@ const Sidebar = () => {
   const { user } = useAuth()
 
   return (
-    <div className="w-64 bg-dark-800 border-r border-dark-700 flex flex-col">
+    <div className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-dark-700 md:bg-dark-800 md:sticky md:top-0 md:h-screen">
       {/* Logo */}
       <div className="p-6 border-b border-dark-700">
         <div className="flex items-center space-x-3">

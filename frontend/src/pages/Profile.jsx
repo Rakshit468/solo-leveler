@@ -66,7 +66,7 @@ const Profile = () => {
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white">Profile</h1>
+        <h1 className="text-2xl font-bold text-white sm:text-3xl">Profile</h1>
         <p className="text-gray-400 mt-2">
           Manage your character and account settings
         </p>
@@ -80,7 +80,7 @@ const Profile = () => {
         >
           <div className="card text-center">
             <div className="relative mb-6">
-              <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center overflow-hidden">
+              <div className="mx-auto h-28 w-28 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center overflow-hidden sm:h-32 sm:w-32">
                 <img
                   src={`/avatars/${user?.character?.avatar || "default-avatar.png"
                     }`}
@@ -89,11 +89,11 @@ const Profile = () => {
                 />
               </div>
               {user?.character?.level >= 10 && (
-                <div className="absolute -top-2 -right-2">
+                <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2">
                   <Crown className="h-8 w-8 text-accent-500" />
                 </div>
               )}
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 flex items-center bg-dark-700 px-4 py-1 rounded-full border-2 border-primary-500 shadow-lg">
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 flex items-center bg-dark-700 px-3 py-1 rounded-full border-2 border-primary-500 shadow-lg sm:px-4">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5 mr-1 text-yellow-400"
@@ -205,7 +205,7 @@ const Profile = () => {
             <h3 className="text-xl font-semibold text-white mb-6">
               Character Stats
             </h3>
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between items-center mb-2">

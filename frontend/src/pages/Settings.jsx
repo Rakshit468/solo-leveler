@@ -39,7 +39,7 @@ const Settings = () => {
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-white flex items-center gap-2 sm:text-3xl">
           <SettingsIcon className="h-8 w-8 text-primary-400" />
           Configuration Chamber
         </h1>
@@ -87,18 +87,18 @@ const Settings = () => {
           ].map((item) => (
             <div
               key={item.key}
-              className="bg-dark-700 rounded-lg p-4 flex items-center justify-between hover:bg-dark-600 transition-colors"
+              className="bg-dark-700 rounded-lg p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between hover:bg-dark-600 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{item.icon}</span>
                 <div>
                   <p className="font-medium text-white">{item.label}</p>
-                  <p className="text-sm text-gray-400">{item.description}</p>
+                  <p className="text-sm text-gray-400 break-words">{item.description}</p>
                 </div>
               </div>
               <button
                 onClick={() => handleNotificationChange(item.key)}
-                className={`relative w-14 h-8 rounded-full transition-all ${
+                className={`relative w-14 h-8 rounded-full transition-all self-end sm:self-auto ${
                   settings.notifications[item.key]
                     ? "bg-success-500"
                     : "bg-gray-600"

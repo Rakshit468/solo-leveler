@@ -160,20 +160,20 @@ const Skills = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white">Skill Trees</h1>
+        <h1 className="text-2xl font-bold text-white sm:text-3xl">Skill Trees</h1>
         <p className="text-gray-400 mt-2">
           Unlock abilities to enhance your character and unlock new possibilities
         </p>
       </div>
 
       {/* Category Tabs */}
-      <div className="flex space-x-1 bg-dark-800 p-1 rounded-lg">
+      <div className="flex space-x-1 overflow-x-auto bg-dark-800 p-1 rounded-lg">
         {categories.map((category) => (
           <button
             key={category.key}
             onClick={() => setSelectedCategory(category.key)}
             className={clsx(
-              'flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors',
+              'flex-1 whitespace-nowrap px-3 py-2 text-sm font-medium rounded-md transition-colors sm:px-4',
               selectedCategory === category.key
                 ? 'bg-primary-600 text-white'
                 : 'text-gray-400 hover:text-white hover:bg-dark-700'

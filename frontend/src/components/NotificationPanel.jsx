@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2, Bell, CheckCircle, AlertCircle, Zap, Lock } from "lucide-react";
 import { useNotifications } from "../contexts/NotificationContext";
@@ -44,10 +44,10 @@ const NotificationPanel = ({ isOpen, onClose }) => {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 400, opacity: 0 }}
             transition={{ type: "spring", damping: 20 }}
-            className="fixed right-0 top-0 h-screen w-96 bg-dark-800 border-l border-dark-700 z-50 flex flex-col shadow-2xl"
+            className="fixed right-0 top-0 h-screen w-full sm:w-96 bg-dark-800 border-l border-dark-700 z-50 flex flex-col shadow-2xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-dark-700">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-dark-700">
               <div className="flex items-center gap-2">
                 <Bell className="h-6 w-6 text-primary-400" />
                 <h2 className="text-xl font-bold text-white">Notifications</h2>

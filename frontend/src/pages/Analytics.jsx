@@ -110,9 +110,9 @@ const Analytics = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Analytics</h1>
+          <h1 className="text-2xl font-bold text-white sm:text-3xl">Analytics</h1>
           <p className="text-gray-400 mt-2">
             Track your progress and identify patterns in your journey
           </p>
@@ -122,7 +122,7 @@ const Analytics = () => {
         <select
           value={period}
           onChange={(e) => setPeriod(e.target.value)}
-          className="input w-auto"
+          className="input w-full sm:w-auto"
         >
           {periods.map((p) => (
             <option key={p.value} value={p.value}>
@@ -305,7 +305,7 @@ const Analytics = () => {
             {streakVisualization.map((day, index) => (
               <div
                 key={index}
-                className={`w-8 h-8 rounded text-xs flex items-center justify-center ${
+                className={`aspect-square rounded text-[10px] sm:text-xs flex items-center justify-center ${
                   day.active
                     ? "bg-success-500 text-white"
                     : "bg-dark-700 text-gray-500"

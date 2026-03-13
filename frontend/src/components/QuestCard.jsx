@@ -22,7 +22,7 @@ const typeIcons = {
 };
 
 const QuestCard = ({ quest, onQuestComplete }) => {
-  const { updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const { addNotification } = useNotifications();
   const [loading, setLoading] = React.useState(false);
 
@@ -60,12 +60,19 @@ const QuestCard = ({ quest, onQuestComplete }) => {
           </div>
         );
 
-        // Update user data (XP, level, streaks)
+        // Update user data (XP, level, streaks, and new stat progression)
         updateUser({
           character: {
+            ...user?.character,
             xp: newXP,
             level: newLevel,
             xpToNextLevel: response.data.data.newXPToNextLevel,
+            stats: response.data.data.updatedStats || user?.character?.stats,
+            totalStats:
+              (response.data.data.updatedStats?.strength || user?.character?.stats?.strength || 0) +
+              (response.data.data.updatedStats?.intelligence || user?.character?.stats?.intelligence || 0) +
+              (response.data.data.updatedStats?.productivity || user?.character?.stats?.productivity || user?.character?.stats?.agility || 0) +
+              (response.data.data.updatedStats?.consistency || user?.character?.stats?.consistency || user?.character?.stats?.luck || 0),
           },
           streaks: response.data.data.streaks,
         });

@@ -15,6 +15,23 @@ const categoryColors = {
   creativity: 'from-purple-500 to-purple-600'
 }
 
+const normalizeStatName = (stat) => {
+  if (stat === 'agility') return 'productivity'
+  if (stat === 'luck') return 'consistency'
+  return stat
+}
+
+const getStatLabel = (stat) => {
+  const normalized = normalizeStatName(stat)
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+}
+
+const getUserStatValue = (stats, stat) => {
+  if (stat === 'agility') return stats?.productivity ?? stats?.agility ?? 0
+  if (stat === 'luck') return stats?.consistency ?? stats?.luck ?? 0
+  return stats?.[stat] ?? 0
+}
+
 const Skills = () => {
   const { user, updateUser } = useAuth()
   const { addNotification } = useNotifications()
@@ -88,6 +105,10 @@ const Skills = () => {
   }
 
   const canUnlockSkill = (skill) => {
+    if (typeof skill.canUnlock === 'boolean') {
+      return skill.canUnlock
+    }
+
     if (skill.unlocked) return false
     
     // Check level requirement
@@ -96,13 +117,17 @@ const Skills = () => {
     // Check stat requirements
     const userStats = user.character.stats
     for (const [stat, required] of Object.entries(skill.requirements.stats)) {
-      if (userStats[stat] < required) return false
+      if (getUserStatValue(userStats, stat) < required) return false
     }
     
     return true
   }
 
   const getSkillRequirementText = (skill) => {
+    if (skill.lockReasons?.length) {
+      return skill.lockReasons[0]
+    }
+
     const requirements = []
     
     if (user.character.level < skill.requirements.level) {
@@ -111,8 +136,8 @@ const Skills = () => {
     
     const userStats = user.character.stats
     for (const [stat, required] of Object.entries(skill.requirements.stats)) {
-      if (required > 0 && userStats[stat] < required) {
-        requirements.push(`${required} ${stat}`)
+      if (required > 0 && getUserStatValue(userStats, stat) < required) {
+        requirements.push(`${required} ${normalizeStatName(stat)}`)
       }
     }
     
@@ -224,7 +249,7 @@ const Skills = () => {
                       bonus > 0 && (
                         <div key={stat} className="flex items-center text-xs text-blue-400">
                           <Zap className="h-3 w-3 mr-1" />
-                          +{bonus} {stat.charAt(0).toUpperCase() + stat.slice(1)}
+                          +{bonus} {getStatLabel(stat)}
                         </div>
                       )
                     )}

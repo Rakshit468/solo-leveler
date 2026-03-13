@@ -252,9 +252,9 @@ const Profile = () => {
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-green-400">Agility</span>
+                    <span className="text-green-400">Productivity</span>
                     <span className="font-bold text-white">
-                      {user?.character?.stats?.agility || 10}
+                      {user?.character?.stats?.productivity ?? user?.character?.stats?.agility ?? 10}
                     </span>
                   </div>
                   <div className="progress-bar h-2">
@@ -262,7 +262,7 @@ const Profile = () => {
                       className="bg-green-500 h-full transition-all duration-300"
                       style={{
                         width: `${Math.min(
-                          ((user?.character?.stats?.agility || 10) / 50) * 100,
+                          ((user?.character?.stats?.productivity ?? user?.character?.stats?.agility ?? 10) / 50) * 100,
                           100
                         )}%`,
                       }}
@@ -272,9 +272,9 @@ const Profile = () => {
 
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-yellow-400">Luck</span>
+                    <span className="text-yellow-400">Consistency</span>
                     <span className="font-bold text-white">
-                      {user?.character?.stats?.luck || 10}
+                      {user?.character?.stats?.consistency ?? user?.character?.stats?.luck ?? 10}
                     </span>
                   </div>
                   <div className="progress-bar h-2">
@@ -282,7 +282,7 @@ const Profile = () => {
                       className="bg-yellow-500 h-full transition-all duration-300"
                       style={{
                         width: `${Math.min(
-                          ((user?.character?.stats?.luck || 10) / 50) * 100,
+                          ((user?.character?.stats?.consistency ?? user?.character?.stats?.luck ?? 10) / 50) * 100,
                           100
                         )}%`,
                       }}

@@ -50,8 +50,8 @@ const userSchema = new mongoose.Schema(
       stats: {
         strength: { type: Number, default: 10 },
         intelligence: { type: Number, default: 10 },
-        agility: { type: Number, default: 10 },
-        luck: { type: Number, default: 10 },
+        productivity: { type: Number, default: 10 },
+        consistency: { type: Number, default: 10 },
         stamina: { type: Number, default: 100 },
       },
       totalStats: {
@@ -124,6 +124,11 @@ userSchema.methods.calculateXPToNextLevel = function () {
 
 // Level up method
 userSchema.methods.levelUp = function () {
+  this.character.stats.productivity =
+    this.character.stats.productivity ?? this.character.stats.agility ?? 10;
+  this.character.stats.consistency =
+    this.character.stats.consistency ?? this.character.stats.luck ?? 10;
+
   while (this.character.xp >= this.character.xpToNextLevel) {
     this.character.xp -= this.character.xpToNextLevel;
     this.character.level += 1;
@@ -131,8 +136,8 @@ userSchema.methods.levelUp = function () {
     // Increase stats on level up
     this.character.stats.strength += Math.floor(Math.random() * 3) + 1;
     this.character.stats.intelligence += Math.floor(Math.random() * 3) + 1;
-    this.character.stats.agility += Math.floor(Math.random() * 3) + 1;
-    this.character.stats.luck += Math.floor(Math.random() * 2) + 1;
+    this.character.stats.productivity += Math.floor(Math.random() * 3) + 1;
+    this.character.stats.consistency += Math.floor(Math.random() * 2) + 1;
     this.character.stats.stamina = Math.min(
       this.character.stats.stamina + 10,
       200
@@ -141,8 +146,8 @@ userSchema.methods.levelUp = function () {
     this.character.totalStats =
       this.character.stats.strength +
       this.character.stats.intelligence +
-      this.character.stats.agility +
-      this.character.stats.luck;
+      this.character.stats.productivity +
+      this.character.stats.consistency;
 
     this.character.xpToNextLevel = this.calculateXPToNextLevel();
   }

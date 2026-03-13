@@ -31,8 +31,8 @@ const skillSchema = new mongoose.Schema({
     stats: {
       strength: { type: Number, default: 0 },
       intelligence: { type: Number, default: 0 },
-      agility: { type: Number, default: 0 },
-      luck: { type: Number, default: 0 }
+      productivity: { type: Number, default: 0 },
+      consistency: { type: Number, default: 0 }
     }
   },
   effects: {
@@ -40,8 +40,8 @@ const skillSchema = new mongoose.Schema({
     statBonus: {
       strength: { type: Number, default: 0 },
       intelligence: { type: Number, default: 0 },
-      agility: { type: Number, default: 0 },
-      luck: { type: Number, default: 0 }
+      productivity: { type: Number, default: 0 },
+      consistency: { type: Number, default: 0 }
     },
     specialAbilities: [String]
   },

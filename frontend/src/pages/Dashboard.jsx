@@ -120,15 +120,15 @@ const Dashboard = () => {
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-400">
-              {user?.character?.stats?.agility || 10}
+              {user?.character?.stats?.productivity ?? user?.character?.stats?.agility ?? 10}
             </div>
-            <div className="text-sm text-gray-400">Agility</div>
+            <div className="text-sm text-gray-400">Productivity</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-yellow-400">
-              {user?.character?.stats?.luck || 10}
+              {user?.character?.stats?.consistency ?? user?.character?.stats?.luck ?? 10}
             </div>
-            <div className="text-sm text-gray-400">Luck</div>
+            <div className="text-sm text-gray-400">Consistency</div>
           </div>
         </div>
       </div>

@@ -71,8 +71,8 @@ const initializeSkills = async () => {
           icon: '🌅',
           category: 'health',
           tier: 1,
-          requirements: { level: 1, skills: [], stats: { strength: 0, intelligence: 0, agility: 0, luck: 0 } },
-          effects: { xpBonus: 5, statBonus: { strength: 2, intelligence: 0, agility: 0, luck: 0 }, specialAbilities: ['Early Bird Bonus'] }
+          requirements: { level: 1, skills: [], stats: { strength: 0, intelligence: 0, productivity: 0, consistency: 0 } },
+          effects: { xpBonus: 5, statBonus: { strength: 2, intelligence: 0, productivity: 0, consistency: 0 }, specialAbilities: ['Early Bird Bonus'] }
         },
         {
           name: 'Fitness Enthusiast',
@@ -80,8 +80,8 @@ const initializeSkills = async () => {
           icon: '💪',
           category: 'health',
           tier: 2,
-          requirements: { level: 5, skills: ['Morning Warrior'], stats: { strength: 15, agility: 10, intelligence: 0, luck: 0 } },
-          effects: { xpBonus: 10, statBonus: { strength: 5, intelligence: 0, agility: 3, luck: 0 }, specialAbilities: ['Exercise Multiplier'] }
+          requirements: { level: 5, skills: ['Morning Warrior'], stats: { strength: 15, productivity: 10, intelligence: 0, consistency: 0 } },
+          effects: { xpBonus: 10, statBonus: { strength: 5, intelligence: 0, productivity: 3, consistency: 0 }, specialAbilities: ['Exercise Multiplier'] }
         },
         {
           name: 'Nutrition Master',
@@ -89,8 +89,8 @@ const initializeSkills = async () => {
           icon: '🥗',
           category: 'health',
           tier: 2,
-          requirements: { level: 8, skills: [], stats: { intelligence: 15, strength: 10, agility: 0, luck: 0 } },
-          effects: { xpBonus: 8, statBonus: { strength: 3, intelligence: 2, agility: 0, luck: 0 }, specialAbilities: ['Meal Planning'] }
+          requirements: { level: 8, skills: [], stats: { intelligence: 15, strength: 10, productivity: 0, consistency: 0 } },
+          effects: { xpBonus: 8, statBonus: { strength: 3, intelligence: 2, productivity: 0, consistency: 0 }, specialAbilities: ['Meal Planning'] }
         },
         {
           name: 'Zen Master',
@@ -98,8 +98,8 @@ const initializeSkills = async () => {
           icon: '🧘',
           category: 'health',
           tier: 3,
-          requirements: { level: 15, skills: ['Morning Warrior'], stats: { intelligence: 25, luck: 15, strength: 0, agility: 0 } },
-          effects: { xpBonus: 15, statBonus: { strength: 0, intelligence: 4, agility: 0, luck: 3 }, specialAbilities: ['Meditation Bonus', 'Stress Reduction'] }
+          requirements: { level: 15, skills: ['Morning Warrior'], stats: { intelligence: 25, consistency: 15, strength: 0, productivity: 0 } },
+          effects: { xpBonus: 15, statBonus: { strength: 0, intelligence: 4, productivity: 0, consistency: 3 }, specialAbilities: ['Meditation Bonus', 'Stress Reduction'] }
         },
         // Knowledge Category
         {
@@ -108,8 +108,8 @@ const initializeSkills = async () => {
           icon: '🤔',
           category: 'knowledge',
           tier: 1,
-          requirements: { level: 1, skills: [], stats: { intelligence: 0, strength: 0, agility: 0, luck: 0 } },
-          effects: { xpBonus: 10, statBonus: { strength: 0, intelligence: 3, agility: 0, luck: 0 }, specialAbilities: ['Learning Bonus'] }
+          requirements: { level: 1, skills: [], stats: { intelligence: 0, strength: 0, productivity: 0, consistency: 0 } },
+          effects: { xpBonus: 10, statBonus: { strength: 0, intelligence: 3, productivity: 0, consistency: 0 }, specialAbilities: ['Learning Bonus'] }
         },
         {
           name: 'Speed Reader',
@@ -117,8 +117,8 @@ const initializeSkills = async () => {
           icon: '📚',
           category: 'knowledge',
           tier: 2,
-          requirements: { level: 6, skills: ['Curious Mind'], stats: { intelligence: 18, agility: 12, strength: 0, luck: 0 } },
-          effects: { xpBonus: 12, statBonus: { strength: 0, intelligence: 4, agility: 2, luck: 0 }, specialAbilities: ['Reading Speed Boost'] }
+          requirements: { level: 6, skills: ['Curious Mind'], stats: { intelligence: 18, productivity: 12, strength: 0, consistency: 0 } },
+          effects: { xpBonus: 12, statBonus: { strength: 0, intelligence: 4, productivity: 2, consistency: 0 }, specialAbilities: ['Reading Speed Boost'] }
         },
         {
           name: 'Research Expert',
@@ -126,8 +126,8 @@ const initializeSkills = async () => {
           icon: '🔬',
           category: 'knowledge',
           tier: 3,
-          requirements: { level: 12, skills: ['Speed Reader'], stats: { intelligence: 30, luck: 15, strength: 0, agility: 0 } },
-          effects: { xpBonus: 18, statBonus: { strength: 0, intelligence: 6, agility: 0, luck: 2 }, specialAbilities: ['Research Mastery'] }
+          requirements: { level: 12, skills: ['Speed Reader'], stats: { intelligence: 30, consistency: 15, strength: 0, productivity: 0 } },
+          effects: { xpBonus: 18, statBonus: { strength: 0, intelligence: 6, productivity: 0, consistency: 2 }, specialAbilities: ['Research Mastery'] }
         },
         {
           name: 'Knowledge Sage',
@@ -135,8 +135,8 @@ const initializeSkills = async () => {
           icon: '🧠',
           category: 'knowledge',
           tier: 4,
-          requirements: { level: 20, skills: ['Research Expert', 'Curious Mind'], stats: { intelligence: 45, strength: 0, agility: 0, luck: 0 } },
-          effects: { xpBonus: 25, statBonus: { strength: 0, intelligence: 8, agility: 0, luck: 0 }, specialAbilities: ['Wisdom Bonus', 'Teaching Ability'] }
+          requirements: { level: 20, skills: ['Research Expert', 'Curious Mind'], stats: { intelligence: 45, strength: 0, productivity: 0, consistency: 0 } },
+          effects: { xpBonus: 25, statBonus: { strength: 0, intelligence: 8, productivity: 0, consistency: 0 }, specialAbilities: ['Wisdom Bonus', 'Teaching Ability'] }
         },
         // Productivity Category
         {
@@ -145,8 +145,8 @@ const initializeSkills = async () => {
           icon: '⏰',
           category: 'productivity',
           tier: 1,
-          requirements: { level: 1, skills: [], stats: { agility: 0, strength: 0, intelligence: 0, luck: 0 } },
-          effects: { xpBonus: 8, statBonus: { strength: 0, intelligence: 1, agility: 3, luck: 0 }, specialAbilities: ['Time Tracking'] }
+          requirements: { level: 1, skills: [], stats: { productivity: 0, strength: 0, intelligence: 0, consistency: 0 } },
+          effects: { xpBonus: 8, statBonus: { strength: 0, intelligence: 1, productivity: 3, consistency: 0 }, specialAbilities: ['Time Tracking'] }
         },
         {
           name: 'Task Slayer',
@@ -154,8 +154,8 @@ const initializeSkills = async () => {
           icon: '⚡',
           category: 'productivity',
           tier: 2,
-          requirements: { level: 7, skills: ['Time Keeper'], stats: { agility: 20, intelligence: 15, strength: 0, luck: 0 } },
-          effects: { xpBonus: 15, statBonus: { strength: 0, intelligence: 3, agility: 5, luck: 0 }, specialAbilities: ['Task Multiplier'] }
+          requirements: { level: 7, skills: ['Time Keeper'], stats: { productivity: 20, intelligence: 15, strength: 0, consistency: 0 } },
+          effects: { xpBonus: 15, statBonus: { strength: 0, intelligence: 3, productivity: 5, consistency: 0 }, specialAbilities: ['Task Multiplier'] }
         },
         {
           name: 'Goal Crusher',
@@ -163,8 +163,8 @@ const initializeSkills = async () => {
           icon: '🎯',
           category: 'productivity',
           tier: 3,
-          requirements: { level: 14, skills: ['Task Slayer'], stats: { agility: 30, strength: 20, intelligence: 0, luck: 0 } },
-          effects: { xpBonus: 20, statBonus: { strength: 3, intelligence: 0, agility: 6, luck: 0 }, specialAbilities: ['Goal Setting Mastery'] }
+          requirements: { level: 14, skills: ['Task Slayer'], stats: { productivity: 30, strength: 20, intelligence: 0, consistency: 0 } },
+          effects: { xpBonus: 20, statBonus: { strength: 3, intelligence: 0, productivity: 6, consistency: 0 }, specialAbilities: ['Goal Setting Mastery'] }
         },
         // Creativity Category
         {
@@ -173,8 +173,8 @@ const initializeSkills = async () => {
           icon: '✨',
           category: 'creativity',
           tier: 1,
-          requirements: { level: 1, skills: [], stats: { luck: 0, strength: 0, intelligence: 0, agility: 0 } },
-          effects: { xpBonus: 12, statBonus: { strength: 0, intelligence: 2, agility: 0, luck: 3 }, specialAbilities: ['Inspiration Bonus'] }
+          requirements: { level: 1, skills: [], stats: { consistency: 0, strength: 0, intelligence: 0, productivity: 0 } },
+          effects: { xpBonus: 12, statBonus: { strength: 0, intelligence: 2, productivity: 0, consistency: 3 }, specialAbilities: ['Inspiration Bonus'] }
         },
         {
           name: 'Artistic Soul',
@@ -182,8 +182,8 @@ const initializeSkills = async () => {
           icon: '🎨',
           category: 'creativity',
           tier: 2,
-          requirements: { level: 8, skills: ['Creative Spark'], stats: { luck: 18, intelligence: 15, strength: 0, agility: 0 } },
-          effects: { xpBonus: 16, statBonus: { strength: 0, intelligence: 3, agility: 0, luck: 4 }, specialAbilities: ['Artistic Creation'] }
+          requirements: { level: 8, skills: ['Creative Spark'], stats: { consistency: 18, intelligence: 15, strength: 0, productivity: 0 } },
+          effects: { xpBonus: 16, statBonus: { strength: 0, intelligence: 3, productivity: 0, consistency: 4 }, specialAbilities: ['Artistic Creation'] }
         },
         {
           name: 'Innovation Master',
@@ -191,8 +191,8 @@ const initializeSkills = async () => {
           icon: '💡',
           category: 'creativity',
           tier: 3,
-          requirements: { level: 16, skills: ['Artistic Soul'], stats: { luck: 25, intelligence: 30, strength: 0, agility: 0 } },
-          effects: { xpBonus: 22, statBonus: { strength: 0, intelligence: 4, agility: 0, luck: 5 }, specialAbilities: ['Innovation Breakthrough'] }
+          requirements: { level: 16, skills: ['Artistic Soul'], stats: { consistency: 25, intelligence: 30, strength: 0, productivity: 0 } },
+          effects: { xpBonus: 22, statBonus: { strength: 0, intelligence: 4, productivity: 0, consistency: 5 }, specialAbilities: ['Innovation Breakthrough'] }
         }
       ];
       

@@ -4,6 +4,26 @@ import XPLog from "../models/XPLog.js";
 import { UserSkill } from "../models/Skill.js";
 import { validationResult } from "express-validator";
 
+const getDifficultyBonus = (difficulty) => {
+  const difficultyMap = {
+    easy: 1,
+    medium: 2,
+    hard: 3,
+    legendary: 4,
+  };
+  return difficultyMap[difficulty] || 1;
+};
+
+const getTypeBonus = (type) => {
+  const typeMap = {
+    daily: 1,
+    weekly: 2,
+    boss: 3,
+    custom: 1,
+  };
+  return typeMap[type] || 1;
+};
+
 export const getQuests = async (req, res) => {
   try {
     const { search, type, status, category, page = 1, limit = 20 } = req.query;
@@ -191,6 +211,51 @@ export const completeQuest = async (req, res) => {
 
     user.streaks.longest = Math.max(user.streaks.longest, user.streaks.current);
     user.streaks.lastActivity = now;
+
+    // Meaningful stat growth based on completion quality and quest challenge.
+    const completedAt = quest.completedAt || now;
+    const hasDueDate = Boolean(quest.dueDate);
+    const hoursDiff = hasDueDate
+      ? (new Date(quest.dueDate).getTime() - completedAt.getTime()) / 3600000
+      : 0;
+    const isOnTime = !hasDueDate || hoursDiff >= 0;
+    const completedEarlyBy24h = hasDueDate && hoursDiff >= 24;
+
+    const completedTodayCount = await Quest.countDocuments({
+      user: user._id,
+      status: "completed",
+      completedAt: { $gte: new Date(now).setHours(0, 0, 0, 0) },
+    });
+
+    const difficultyBonus = getDifficultyBonus(quest.difficulty);
+    const typeBonus = getTypeBonus(quest.type);
+    const highPriorityBonus = ["high", "critical"].includes(quest.priority) ? 1 : 0;
+
+    const statGains = {
+      strength: Math.max(1, Math.floor((difficultyBonus + highPriorityBonus) / 2)),
+      intelligence:
+        (quest.category === "knowledge" ? 1 : 0) + (quest.difficulty === "hard" || quest.difficulty === "legendary" ? 1 : 0),
+      productivity:
+        typeBonus + highPriorityBonus + (quest.difficulty === "hard" || quest.difficulty === "legendary" ? 1 : 0) + (completedTodayCount >= 3 ? 1 : 0),
+      consistency:
+        (isOnTime ? 2 : 0) + (completedEarlyBy24h ? 1 : 0) + (quest.type === "daily" ? 1 : 0),
+    };
+
+    user.character.stats.productivity =
+      user.character.stats.productivity ?? user.character.stats.agility ?? 10;
+    user.character.stats.consistency =
+      user.character.stats.consistency ?? user.character.stats.luck ?? 10;
+
+    user.character.stats.strength += statGains.strength;
+    user.character.stats.intelligence += statGains.intelligence;
+    user.character.stats.productivity += statGains.productivity;
+    user.character.stats.consistency += statGains.consistency;
+    user.character.totalStats =
+      user.character.stats.strength +
+      user.character.stats.intelligence +
+      user.character.stats.productivity +
+      user.character.stats.consistency;
+
     await user.save();
 
     // Update skill progress for skills in the same category as the quest
@@ -240,6 +305,8 @@ export const completeQuest = async (req, res) => {
         newLevel,
         newXP,
         newXPToNextLevel,
+        statGains,
+        updatedStats: user.character.stats,
         streaks: user.streaks,
         updatedSkills,
       },

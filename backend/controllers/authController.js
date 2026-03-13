@@ -37,8 +37,8 @@ export const register = async (req, res) => {
         stats: {
           strength: 10,
           intelligence: 10,
-          agility: 10,
-          luck: 10,
+          productivity: 10,
+          consistency: 10,
           stamina: 100
         }
       }

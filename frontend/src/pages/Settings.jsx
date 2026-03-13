@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Settings as SettingsIcon, Volume2, Eye, Bell, Moon, Sun, Palette, Lock } from "lucide-react";
+import { Settings as SettingsIcon, Volume2, Bell, Lock } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
 
 const Settings = () => {
   const { user } = useAuth();
   const [settings, setSettings] = useState({
-    theme: localStorage.getItem("theme") || "dark",
     volume: parseInt(localStorage.getItem("volume") || "80"),
     brightness: parseInt(localStorage.getItem("brightness") || "100"),
     notifications: {
@@ -16,18 +15,7 @@ const Settings = () => {
       achievements: localStorage.getItem("notif_achievement") !== "false",
       dueDates: localStorage.getItem("notif_due") !== "false",
     },
-    colorTheme: localStorage.getItem("colorTheme") || "purple",
   });
-
-  // Apply theme on mount
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") || "dark";
-    if (savedTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, []);
 
   const handleNotificationChange = (key) => {
     const newSettings = {
@@ -47,33 +35,6 @@ const Settings = () => {
     localStorage.setItem("volume", value);
   };
 
-  const handleThemeChange = (theme) => {
-    setSettings({ ...settings, theme });
-    localStorage.setItem("theme", theme);
-    
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-    
-    toast.success(`Theme changed to ${theme}!`);
-  };
-
-  const handleColorTheme = (color) => {
-    setSettings({ ...settings, colorTheme: color });
-    localStorage.setItem("colorTheme", color);
-    toast.success(`Color theme changed to ${color}!`);
-  };
-
-  const colorOptions = [
-    { name: "Purple", value: "purple", color: "from-purple-500 to-indigo-500" },
-    { name: "Blue", value: "blue", color: "from-blue-500 to-cyan-500" },
-    { name: "Red", value: "red", color: "from-red-500 to-pink-500" },
-    { name: "Green", value: "green", color: "from-green-500 to-emerald-500" },
-    { name: "Orange", value: "orange", color: "from-orange-500 to-red-500" },
-  ];
-
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
@@ -85,69 +46,12 @@ const Settings = () => {
         <p className="text-gray-400 mt-2">Customize your hero's experience</p>
       </div>
 
-      {/* Theme Settings */}
-      <motion.div
-        className="card"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-          <Sun className="h-5 w-5 text-yellow-400" />
-          Appearance
-        </h2>
-
-        {/* Theme Mode */}
-        <div className="space-y-4">
-          <div>
-            <p className="text-gray-300 font-medium mb-3">Display Mode</p>
-            <div className="flex gap-4">
-              {["dark", "light"].map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => handleThemeChange(mode)}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
-                    settings.theme === mode
-                      ? "bg-primary-600 text-white border-primary-500"
-                      : "bg-dark-700 text-gray-400 border-dark-600 hover:border-dark-500"
-                  } border`}
-                >
-                  {mode === "dark" ? (
-                    <Moon className="h-5 w-5" />
-                  ) : (
-                    <Sun className="h-5 w-5" />
-                  )}
-                  {mode.charAt(0).toUpperCase() + mode.slice(1)} Mode
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Color Theme */}
-          <div className="pt-4 border-t border-dark-700">
-            <p className="text-gray-300 font-medium mb-3">Primary Color</p>
-            <div className="flex gap-3 flex-wrap">
-              {colorOptions.map((color) => (
-                <button
-                  key={color.value}
-                  onClick={() => handleColorTheme(color.value)}
-                  className={`w-12 h-12 rounded-lg bg-gradient-to-r ${color.color} transition-all transform hover:scale-110 ${
-                    settings.colorTheme === color.value ? "ring-2 ring-offset-2 ring-white" : ""
-                  }`}
-                  title={color.name}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
       {/* Notification Settings */}
       <motion.div
         className="card"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+        transition={{ delay: 0.1 }}
       >
         <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
           <Bell className="h-5 w-5 text-blue-400" />
@@ -219,7 +123,7 @@ const Settings = () => {
         className="card"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.2 }}
       >
         <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
           <Volume2 className="h-5 w-5 text-green-400" />
@@ -249,7 +153,7 @@ const Settings = () => {
         className="card"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
+        transition={{ delay: 0.3 }}
       >
         <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
           <Lock className="h-5 w-5 text-red-400" />
@@ -284,7 +188,7 @@ const Settings = () => {
         className="card border border-primary-500/50 bg-gradient-to-r from-dark-800 to-dark-700"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
+        transition={{ delay: 0.4 }}
       >
         <p className="text-primary-400 text-sm font-bold mb-2">🚀 BETA FEATURES</p>
         <h3 className="text-lg font-bold text-white mb-2">Coming Soon</h3>

@@ -11,21 +11,14 @@
     scroll-behavior: smooth;
   }
 
-  html.light {
-    --tw-bg-opacity: 1;
-    background-color: rgb(243 244 246 / var(--tw-bg-opacity));
-    /* gray-100 */
-  }
-
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     line-height: 1.5;
   }
 }
 
-/* Add light/dark support to main backgrounds */
 body {
-  @apply bg-dark-900 text-white dark:bg-dark-900 dark:text-white bg-gray-100 text-gray-900;
+  @apply bg-dark-900 text-white;
 }
 
 @layer components {
@@ -54,39 +47,18 @@ body {
   }
 
   .card {
-    @apply rounded-xl p-6 shadow-lg border transition-colors duration-200;
-  }
-
-  html.dark .card {
     @apply bg-dark-800 border-dark-700;
-  }
-
-  html.light .card {
-    @apply bg-white border-gray-200;
+    @apply rounded-xl p-6 shadow-lg border;
   }
 
   .input {
+    @apply bg-dark-800 border-dark-700 text-white;
     @apply block w-full rounded-lg border px-3 py-2 placeholder-gray-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none transition-colors;
   }
 
-  html.dark .input {
-    @apply bg-dark-800 border-dark-700 text-white;
-  }
-
-  html.light .input {
-    @apply bg-white border-gray-200 text-gray-900;
-  }
-
   .progress-bar {
-    @apply rounded-full overflow-hidden transition-colors duration-200;
-  }
-
-  html.dark .progress-bar {
     @apply bg-dark-700;
-  }
-
-  html.light .progress-bar {
-    @apply bg-gray-200;
+    @apply rounded-full overflow-hidden;
   }
 
   .progress-fill {

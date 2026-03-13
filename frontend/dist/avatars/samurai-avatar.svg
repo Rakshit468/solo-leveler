@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="samuraiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5b21b6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" fill="url(#samuraiGrad)"/>
+  <!-- Head -->
+  <circle cx="64" cy="35" r="16" fill="#fdbf5e"/>
+  <!-- Samurai helmet (kabuto) -->
+  <path d="M 48 25 L 52 12 L 64 8 L 76 12 L 80 25" fill="#e74c3c" stroke="#c0392b" stroke-width="1"/>
+  <path d="M 50 25 L 51 28 L 77 28 L 78 25" fill="#c0392b"/>
+  <!-- Face -->
+  <circle cx="60" cy="33" r="2" fill="#000"/>
+  <circle cx="68" cy="33" r="2" fill="#000"/>
+  <line x1="62" y1="38" x2="66" y2="38" stroke="#000" stroke-width="1"/>
+  <!-- Armor -->
+  <rect x="48" y="52" width="32" height="35" fill="#d3d3d3" stroke="#808080" stroke-width="1" rx="2"/>
+  <line x1="48" y1="62" x2="80" y2="62" stroke="#808080" stroke-width="1"/>
+  <line x1="48" y1="72" x2="80" y2="72" stroke="#808080" stroke-width="1"/>
+  <!-- Katana (main weapon) -->
+  <line x1="32" y1="48" x2="28" y2="95" stroke="#c0c0c0" stroke-width="2.5"/>
+  <ellipse cx="29" cy="95" rx="2" ry="3" fill="#8b7355"/>
+  <polygon points="28,95 26,92 30,92" fill="#c0c0c0"/>
+  <!-- Spiritual emblem -->
+  <circle cx="64" cy="67" r="2" fill="#e74c3c"/>
+</svg>

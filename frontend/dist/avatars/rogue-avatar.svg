@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="rogueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" fill="url(#rogueGrad)"/>
+  <!-- Head -->
+  <circle cx="64" cy="35" r="16" fill="#fdbf5e"/>
+  <!-- Mask -->
+  <rect x="54" y="30" width="8" height="8" fill="#1f2937" rx="1"/>
+  <rect x="66" y="30" width="8" height="8" fill="#1f2937" rx="1"/>
+  <path d="M 58 36 Q 64 38 70 36" stroke="#000" stroke-width="1" fill="none"/>
+  <!-- Hooded cloak -->
+  <path d="M 45 45 L 48 52 L 80 52 L 83 45" fill="#1f2937" stroke="#374151" stroke-width="1"/>
+  <!-- Body (dark leather) -->
+  <path d="M 47 52 L 50 90 L 78 90 L 81 52 Z" fill="#374151" stroke="#4b5563" stroke-width="1"/>
+  <!-- Daggers -->
+  <line x1="50" y1="65" x2="48" y2="78" stroke="#c0c0c0" stroke-width="2"/>
+  <polygon points="48,78 47,82 49,82" fill="#808080"/>
+  <line x1="78" y1="65" x2="80" y2="78" stroke="#c0c0c0" stroke-width="2"/>
+  <polygon points="80,78 79,82 81,82" fill="#808080"/>
+</svg>

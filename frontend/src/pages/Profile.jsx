@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Edit, Save, X, User, Mail, Crown } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
 import toast from "react-hot-toast";
 
 const avatarOptions = [
@@ -19,6 +20,7 @@ const avatarOptions = [
 
 const Profile = () => {
   const { user, updateProfile } = useAuth();
+  const { theme, setTheme, toggleTheme } = useTheme();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -71,6 +73,19 @@ const Profile = () => {
           Manage your character and account settings
         </p>
       </div>
+      {/* Theme Switcher */}
+      <div className="mb-4 flex items-center gap-4">
+        <span className="text-gray-300">Theme:</span>
+        <button
+          className={`px-4 py-2 rounded-lg border ${theme === "dark"
+              ? "bg-dark-700 text-white border-primary-500"
+              : "bg-white text-dark-900 border-dark-700"
+            } transition-colors`}
+          onClick={toggleTheme}
+        >
+          {theme === "dark" ? "🌙 Dark" : "☀️ Light"}
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Character Card */}
@@ -83,9 +98,8 @@ const Profile = () => {
             <div className="relative mb-6">
               <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center overflow-hidden">
                 <img
-                  src={`/avatars/${
-                    user?.character?.avatar || "default-avatar.png"
-                  }`}
+                  src={`/avatars/${user?.character?.avatar || "default-avatar.png"
+                    }`}
                   alt="avatar"
                   className="w-full h-full object-cover"
                 />
@@ -107,7 +121,7 @@ const Profile = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 8c-1.657 0-3 1.343-3 3 0 1.657 1.343 3 3 3s3-1.343 3-3c0-1.657-1.343-3-3-3zm0 13c-4.418 0-8-3.582-8-8 0-4.418 3.582-8 8-8s8 3.582 8 8c0 4.418-3.582 8-8 8z"
+                    d="M12 8c-1.657 0-3 1.343-3 3 0 1.657 1.343 3 3 3s3-1.343 3-3c0-1.657-1.343-3-3-3zm0 13c-4.418 0-8-3.582-8-8 0-4.418 3.582-8 8-8s8 3.582 8 8c0 4.418-3.582-8-8-8z"
                   />
                 </svg>
                 <span className="text-yellow-400 font-bold">
@@ -135,11 +149,10 @@ const Profile = () => {
                       <button
                         key={avatar}
                         type="button"
-                        className={`rounded-full border-2 p-1 w-16 h-16 flex items-center justify-center transition-all ${
-                          formData.avatar === avatar
+                        className={`rounded-full border-2 p-1 w-16 h-16 flex items-center justify-center transition-all ${formData.avatar === avatar
                             ? "border-primary-500 ring-2 ring-primary-400"
                             : "border-dark-700"
-                        }`}
+                          }`}
                         onClick={() =>
                           setFormData((prev) => ({ ...prev, avatar }))
                         }
@@ -243,7 +256,7 @@ const Profile = () => {
                       style={{
                         width: `${Math.min(
                           ((user?.character?.stats?.intelligence || 10) / 50) *
-                            100,
+                          100,
                           100
                         )}%`,
                       }}

@@ -40,17 +40,9 @@ const Register = () => {
   };
 
   const handleGoogleLogin = () => {
-    // Get base API URL from env
-    const baseApiUrl = import.meta.env.VITE_API_URL;
-
-    // Remove trailing slash if any to avoid double slash
-    const cleanBaseUrl = baseApiUrl.replace(/\/$/, "");
-
-    // Construct the full Google auth URL, ensuring the /api prefix is present
-    const googleAuthUrl = `${cleanBaseUrl}/api/auth/google`;
-
-    // Redirect browser to the Google OAuth endpoint
-    window.location.href = googleAuthUrl;
+    const baseApiUrl = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+    const origin = encodeURIComponent(window.location.origin);
+    window.location.href = `${baseApiUrl}/api/auth/google?origin=${origin}`;
   };
 
   return (

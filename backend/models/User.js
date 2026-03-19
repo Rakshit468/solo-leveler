@@ -92,6 +92,16 @@ const userSchema = new mongoose.Schema(
         achievements: { type: Boolean, default: true },
       },
     },
+    integrations: {
+      googleCalendar: {
+        connected: { type: Boolean, default: false },
+        email: String,
+        accessToken: String,
+        refreshToken: String,
+        scope: String,
+        expiryDate: Date,
+      },
+    },
     isActive: {
       type: Boolean,
       default: true,

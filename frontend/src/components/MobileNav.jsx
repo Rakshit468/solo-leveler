@@ -1,11 +1,12 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Target, Zap, Trophy, BarChart3, User } from 'lucide-react'
+import { Home, Target, Zap, Trophy, BarChart3, User, CalendarDays } from 'lucide-react'
 import clsx from 'clsx'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Quests', href: '/quests', icon: Target },
+  { name: 'Calendar', href: '/calendar', icon: CalendarDays },
   { name: 'Skills', href: '/skills', icon: Zap },
   { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
@@ -17,7 +18,7 @@ const MobileNav = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-dark-700 bg-dark-800/95 backdrop-blur md:hidden">
-      <div className="grid grid-cols-6">
+      <div className="grid grid-cols-7">
         {navigation.map((item) => {
           const isActive = location.pathname === item.href
           return (

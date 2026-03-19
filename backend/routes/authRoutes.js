@@ -57,28 +57,67 @@ router.put("/profile", protect, updateProfile);
 
 // --- Google OAuth Routes ---
 
-// Start Google OAuth
-router.get(
-  "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
+// Validate that the requested origin is a known frontend (prevents open redirect).
+const isAllowedOrigin = (origin) => {
+  if (!origin) return false;
+  const allowed = [
+    process.env.CLIENT_URL,
+    "http://localhost:5173",
+    "http://localhost:5174",
+  ].filter(Boolean);
+  if (allowed.includes(origin)) return true;
+  // Allow any Vercel preview/production deployment for this project.
+  return /^https:\/\/[\w-]+\.vercel\.app$/.test(origin);
+};
 
-// Google OAuth callback with logging middleware
+// Start Google OAuth — encode the requesting frontend origin in the state JWT
+// so the callback can redirect back to the correct deployment.
+router.get("/google", (req, res, next) => {
+  const requestedOrigin = req.query.origin
+    ? decodeURIComponent(req.query.origin)
+    : "";
+  const origin = isAllowedOrigin(requestedOrigin)
+    ? requestedOrigin
+    : process.env.CLIENT_URL || "http://localhost:5173";
+
+  const state = jwt.sign({ origin }, process.env.JWT_SECRET, {
+    expiresIn: "10m",
+  });
+
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    state,
+  })(req, res, next);
+});
+
+// Google OAuth callback — decode state to find the correct frontend to redirect to.
 router.get(
   "/google/callback",
   (req, res, next) => {
-    console.log("Google OAuth callback route hit");
-    next();
+    // Decode origin from state before passport consumes the request.
+    let clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    try {
+      const decoded = jwt.verify(req.query.state, process.env.JWT_SECRET);
+      if (decoded.origin && isAllowedOrigin(decoded.origin)) {
+        clientUrl = decoded.origin;
+      }
+    } catch (_) {
+      // state invalid or expired — fall back to CLIENT_URL
+    }
+    req._oauthClientUrl = clientUrl;
+
+    passport.authenticate("google", {
+      session: false,
+      failureRedirect: `${clientUrl}/login`,
+    })(req, res, next);
   },
-  passport.authenticate("google", {
-    session: false,
-    failureRedirect: process.env.CLIENT_URL || "http://localhost:5173/login",
-  }),
   (req, res) => {
+    const clientUrl = req._oauthClientUrl ||
+      process.env.CLIENT_URL ||
+      "http://localhost:5173";
     const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, {
       expiresIn: "30d",
     });
-    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
     res.redirect(`${clientUrl}/auth/callback?token=${token}`);
   }
 );

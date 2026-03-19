@@ -12,6 +12,8 @@ const CreateQuestModal = ({ onClose, onQuestCreate }) => {
     type: 'custom',
     difficulty: 'medium',
     dueDate: '',
+    startTime: '',
+    endTime: '',
     priority: 'medium',
     tags: ''
   })
@@ -29,11 +31,38 @@ const CreateQuestModal = ({ onClose, onQuestCreate }) => {
     setLoading(true)
 
     try {
+      if ((formData.startTime || formData.endTime) && !formData.dueDate) {
+        toast.error('Please choose a due date when using time slots')
+        setLoading(false)
+        return
+      }
+
+      if (formData.startTime && formData.endTime && formData.endTime <= formData.startTime) {
+        toast.error('End time must be later than start time')
+        setLoading(false)
+        return
+      }
+
+      const startDateTime =
+        formData.dueDate && formData.startTime
+          ? `${formData.dueDate}T${formData.startTime}:00`
+          : undefined
+
+      const endDateTime =
+        formData.dueDate && formData.endTime
+          ? `${formData.dueDate}T${formData.endTime}:00`
+          : undefined
+
       const questData = {
         ...formData,
         tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-        dueDate: formData.dueDate || undefined
+        dueDate: formData.dueDate || undefined,
+        startDateTime,
+        endDateTime,
       }
+
+      delete questData.startTime
+      delete questData.endTime
 
       const response = await questAPI.createQuest(questData)
       if (response.data.success) {
@@ -162,7 +191,8 @@ const CreateQuestModal = ({ onClose, onQuestCreate }) => {
           </div>
 
           {/* Due Date */}
-          <div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="sm:col-span-1">
             <label className="block text-sm font-medium text-gray-300 mb-1">
               Due Date
             </label>
@@ -173,6 +203,33 @@ const CreateQuestModal = ({ onClose, onQuestCreate }) => {
               value={formData.dueDate}
               onChange={handleChange}
             />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Start Time
+              </label>
+              <input
+                type="time"
+                name="startTime"
+                className="input"
+                value={formData.startTime}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                End Time
+              </label>
+              <input
+                type="time"
+                name="endTime"
+                className="input"
+                value={formData.endTime}
+                onChange={handleChange}
+              />
+            </div>
           </div>
 
           {/* Tags */}

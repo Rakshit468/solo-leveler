@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Quests from "./pages/Quests";
+import Calendar from "./pages/Calendar";
 import Skills from "./pages/Skills";
 import Leaderboard from "./pages/Leaderboard";
 import Analytics from "./pages/Analytics";
@@ -61,6 +62,7 @@ function App() {
             <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/quests" element={<Quests />} />
+            <Route path="/calendar" element={<Calendar />} />
             <Route path="/skills" element={<Skills />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/analytics" element={<Analytics />} />

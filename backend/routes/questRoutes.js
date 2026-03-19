@@ -6,14 +6,29 @@ import {
   updateQuest, 
   completeQuest, 
   deleteQuest,
-  getDashboardData
+  getDashboardData,
+  getGoogleCalendarAuthUrl,
+  googleCalendarCallback,
+  getGoogleCalendarStatus,
+  disconnectGoogleCalendar,
+  syncQuestToGoogleCalendar,
+  syncAllQuestsToGoogleCalendar
 } from '../controllers/questController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// All routes are protected
+// Google Calendar OAuth callback must be public because user returns from Google.
+router.get('/google-calendar/callback', googleCalendarCallback);
+
+// All routes below are protected
 router.use(protect);
+
+router.get('/google-calendar/auth-url', getGoogleCalendarAuthUrl);
+router.get('/google-calendar/status', getGoogleCalendarStatus);
+router.delete('/google-calendar/disconnect', disconnectGoogleCalendar);
+router.post('/google-calendar/sync-all', syncAllQuestsToGoogleCalendar);
+router.post('/:id/google-calendar/sync', syncQuestToGoogleCalendar);
 
 // Quest CRUD routes
 router.get('/', getQuests);

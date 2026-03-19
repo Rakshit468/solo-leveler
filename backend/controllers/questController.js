@@ -3,6 +3,12 @@ import User from "../models/User.js";
 import XPLog from "../models/XPLog.js";
 import { UserSkill } from "../models/Skill.js";
 import { validationResult } from "express-validator";
+import {
+  buildGoogleCalendarAuthUrl,
+  exchangeGoogleCalendarCode,
+  removeGoogleCalendarEvent,
+  syncQuestWithGoogleCalendar,
+} from "../services/googleCalendarService.js";
 
 const getDifficultyBonus = (difficulty) => {
   const difficultyMap = {
@@ -22,6 +28,20 @@ const getTypeBonus = (type) => {
     custom: 1,
   };
   return typeMap[type] || 1;
+};
+
+const parseDate = (value) => {
+  if (!value) {
+    return undefined;
+  }
+
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const localDate = new Date(`${value}T00:00:00`);
+    return Number.isNaN(localDate.getTime()) ? undefined : localDate;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
 };
 
 export const getQuests = async (req, res) => {
@@ -79,6 +99,8 @@ export const createQuest = async (req, res) => {
       type,
       difficulty,
       dueDate,
+      startDateTime,
+      endDateTime,
       recurrence,
       tags,
       priority,
@@ -91,7 +113,9 @@ export const createQuest = async (req, res) => {
       category,
       type,
       difficulty,
-      dueDate,
+      dueDate: parseDate(dueDate),
+      startDateTime: parseDate(startDateTime),
+      endDateTime: parseDate(endDateTime),
       recurrence,
       priority,
       tags: tags || [],
@@ -101,6 +125,19 @@ export const createQuest = async (req, res) => {
     quest.xpReward = quest.calculateXP();
 
     await quest.save();
+
+    const user = await User.findById(req.user.id);
+    if (user?.integrations?.googleCalendar?.connected) {
+      try {
+        const syncedEvent = await syncQuestWithGoogleCalendar(user, quest);
+        if (syncedEvent?.id) {
+          quest.googleCalendarEventId = syncedEvent.id;
+          await quest.save();
+        }
+      } catch (syncError) {
+        console.error("Google Calendar sync (create) failed:", syncError.message);
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -130,22 +167,40 @@ export const updateQuest = async (req, res) => {
       category,
       difficulty,
       dueDate,
+      startDateTime,
+      endDateTime,
       priority,
       tags,
     } = req.body;
 
-    if (title) quest.title = title;
-    if (description) quest.description = description;
-    if (category) quest.category = category;
+    if (title !== undefined) quest.title = title;
+    if (description !== undefined) quest.description = description;
+    if (category !== undefined) quest.category = category;
     if (difficulty) {
       quest.difficulty = difficulty;
       quest.xpReward = quest.calculateXP();
     }
-    if (dueDate) quest.dueDate = dueDate;
-    if (priority) quest.priority = priority;
-    if (tags) quest.tags = tags;
+    if (dueDate !== undefined) quest.dueDate = parseDate(dueDate);
+    if (startDateTime !== undefined)
+      quest.startDateTime = parseDate(startDateTime);
+    if (endDateTime !== undefined) quest.endDateTime = parseDate(endDateTime);
+    if (priority !== undefined) quest.priority = priority;
+    if (tags !== undefined) quest.tags = tags;
 
     await quest.save();
+
+    const user = await User.findById(req.user.id);
+    if (user?.integrations?.googleCalendar?.connected) {
+      try {
+        const syncedEvent = await syncQuestWithGoogleCalendar(user, quest);
+        if (syncedEvent?.id && quest.googleCalendarEventId !== syncedEvent.id) {
+          quest.googleCalendarEventId = syncedEvent.id;
+          await quest.save();
+        }
+      } catch (syncError) {
+        console.error("Google Calendar sync (update) failed:", syncError.message);
+      }
+    }
 
     res.json({
       success: true,
@@ -319,7 +374,7 @@ export const completeQuest = async (req, res) => {
 
 export const deleteQuest = async (req, res) => {
   try {
-    const quest = await Quest.findOneAndDelete({
+    const quest = await Quest.findOne({
       _id: req.params.id,
       user: req.user.id,
     });
@@ -330,6 +385,20 @@ export const deleteQuest = async (req, res) => {
         message: "Quest not found or you do not have permission to delete it",
       });
     }
+
+    const user = await User.findById(req.user.id);
+    if (
+      user?.integrations?.googleCalendar?.connected &&
+      quest.googleCalendarEventId
+    ) {
+      try {
+        await removeGoogleCalendarEvent(user, quest.googleCalendarEventId);
+      } catch (syncError) {
+        console.error("Google Calendar delete sync failed:", syncError.message);
+      }
+    }
+
+    await quest.deleteOne();
 
     res.json({
       success: true,
@@ -379,5 +448,178 @@ export const getDashboardData = async (req, res) => {
   } catch (error) {
     console.error("Get dashboard data error:", error);
     res.status(500).json({ message: "Server error fetching dashboard data" });
+  }
+};
+
+export const getGoogleCalendarAuthUrl = async (req, res) => {
+  try {
+    const authUrl = buildGoogleCalendarAuthUrl(req.user.id);
+    res.json({
+      success: true,
+      data: { authUrl },
+    });
+  } catch (error) {
+    console.error("Generate Google Calendar auth URL error:", error);
+    res.status(500).json({ message: "Failed to generate Google Calendar auth URL" });
+  }
+};
+
+export const googleCalendarCallback = async (req, res) => {
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+
+  try {
+    const { code, state } = req.query;
+    if (!code || !state) {
+      return res.redirect(`${clientUrl}/calendar?googleCalendar=error`);
+    }
+
+    const { userId, tokens, calendarEmail } = await exchangeGoogleCalendarCode(
+      code,
+      state
+    );
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.redirect(`${clientUrl}/calendar?googleCalendar=error`);
+    }
+
+    user.integrations = user.integrations || {};
+    user.integrations.googleCalendar = {
+      connected: true,
+      email: calendarEmail,
+      accessToken: tokens.access_token,
+      refreshToken:
+        tokens.refresh_token || user.integrations?.googleCalendar?.refreshToken,
+      scope: tokens.scope,
+      expiryDate: tokens.expiry_date
+        ? new Date(tokens.expiry_date)
+        : user.integrations?.googleCalendar?.expiryDate,
+    };
+
+    await user.save();
+
+    return res.redirect(`${clientUrl}/calendar?googleCalendar=connected`);
+  } catch (error) {
+    console.error("Google Calendar callback error:", error);
+    return res.redirect(`${clientUrl}/calendar?googleCalendar=error`);
+  }
+};
+
+export const getGoogleCalendarStatus = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("integrations.googleCalendar");
+    const integration = user?.integrations?.googleCalendar;
+
+    res.json({
+      success: true,
+      data: {
+        connected: Boolean(integration?.connected),
+        email: integration?.email || null,
+      },
+    });
+  } catch (error) {
+    console.error("Get Google Calendar status error:", error);
+    res.status(500).json({ message: "Failed to get Google Calendar status" });
+  }
+};
+
+export const disconnectGoogleCalendar = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.integrations = user.integrations || {};
+    user.integrations.googleCalendar = {
+      connected: false,
+      email: null,
+      accessToken: null,
+      refreshToken: null,
+      scope: null,
+      expiryDate: null,
+    };
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Google Calendar disconnected",
+    });
+  } catch (error) {
+    console.error("Disconnect Google Calendar error:", error);
+    res.status(500).json({ message: "Failed to disconnect Google Calendar" });
+  }
+};
+
+export const syncQuestToGoogleCalendar = async (req, res) => {
+  try {
+    const [user, quest] = await Promise.all([
+      User.findById(req.user.id),
+      Quest.findOne({ _id: req.params.id, user: req.user.id }),
+    ]);
+
+    if (!quest) {
+      return res.status(404).json({ message: "Quest not found" });
+    }
+
+    if (!user?.integrations?.googleCalendar?.connected) {
+      return res.status(400).json({ message: "Google Calendar is not connected" });
+    }
+
+    const syncedEvent = await syncQuestWithGoogleCalendar(user, quest);
+    if (syncedEvent?.id) {
+      quest.googleCalendarEventId = syncedEvent.id;
+      await quest.save();
+    }
+
+    res.json({
+      success: true,
+      message: "Quest synced to Google Calendar",
+      data: {
+        eventId: syncedEvent?.id || quest.googleCalendarEventId,
+      },
+    });
+  } catch (error) {
+    console.error("Sync quest to Google Calendar error:", error);
+    res.status(500).json({ message: "Failed to sync quest to Google Calendar" });
+  }
+};
+
+export const syncAllQuestsToGoogleCalendar = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user?.integrations?.googleCalendar?.connected) {
+      return res.status(400).json({ message: "Google Calendar is not connected" });
+    }
+
+    const quests = await Quest.find({
+      user: req.user.id,
+      status: { $ne: "completed" },
+      $or: [{ dueDate: { $ne: null } }, { startDateTime: { $ne: null } }],
+    });
+
+    let synced = 0;
+    for (const quest of quests) {
+      try {
+        const event = await syncQuestWithGoogleCalendar(user, quest);
+        if (event?.id) {
+          quest.googleCalendarEventId = event.id;
+          await quest.save();
+          synced += 1;
+        }
+      } catch (syncError) {
+        console.error(`Sync failed for quest ${quest._id}:`, syncError.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Synced ${synced} quest(s) to Google Calendar`,
+      data: { synced, total: quests.length },
+    });
+  } catch (error) {
+    console.error("Sync all quests to Google Calendar error:", error);
+    res.status(500).json({ message: "Failed to sync quests to Google Calendar" });
   }
 };

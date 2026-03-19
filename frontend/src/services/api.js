@@ -38,6 +38,11 @@ export const questAPI = {
   completeQuest: (id) => api.post(`/quests/${id}/complete`),
   deleteQuest: (id) => api.delete(`/quests/${id}`),
   getDashboardData: () => api.get("/quests/dashboard"),
+  getGoogleCalendarAuthUrl: () => api.get("/quests/google-calendar/auth-url"),
+  getGoogleCalendarStatus: () => api.get("/quests/google-calendar/status"),
+  disconnectGoogleCalendar: () => api.delete("/quests/google-calendar/disconnect"),
+  syncAllToGoogleCalendar: () => api.post("/quests/google-calendar/sync-all"),
+  syncQuestToGoogleCalendar: (id) => api.post(`/quests/${id}/google-calendar/sync`),
 };
 
 // Stats API

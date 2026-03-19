@@ -52,6 +52,9 @@ const questSchema = new mongoose.Schema({
     best: { type: Number, default: 0 }
   },
   dueDate: Date,
+  startDateTime: Date,
+  endDateTime: Date,
+  googleCalendarEventId: String,
   completedAt: Date,
   completionHistory: [{
     date: { type: Date, default: Date.now },
@@ -86,6 +89,7 @@ const questSchema = new mongoose.Schema({
 // Index for efficient queries
 questSchema.index({ user: 1, status: 1, type: 1 });
 questSchema.index({ user: 1, dueDate: 1 });
+questSchema.index({ user: 1, startDateTime: 1 });
 
 // Calculate XP based on difficulty and type
 questSchema.methods.calculateXP = function() {

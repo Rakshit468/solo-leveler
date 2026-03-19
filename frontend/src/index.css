@@ -1,6 +1,10 @@
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
+@import '@fullcalendar/core/index.css';
+@import '@fullcalendar/daygrid/index.css';
+@import '@fullcalendar/timegrid/index.css';
+@import '@fullcalendar/list/index.css';
 
 @layer base {
   * {
@@ -149,4 +153,28 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* FullCalendar theme overrides for dark UI */
+.fc {
+  --fc-border-color: #374151;
+  --fc-page-bg-color: #1f2937;
+  --fc-neutral-bg-color: #111827;
+  --fc-list-event-hover-bg-color: #374151;
+  --fc-today-bg-color: rgba(59, 130, 246, 0.12);
+  color: #f3f4f6;
+}
+
+.fc .fc-button {
+  background: #1e40af;
+  border-color: #1d4ed8;
+}
+
+.fc .fc-button:hover {
+  background: #1d4ed8;
+}
+
+.fc .fc-button:disabled {
+  background: #374151;
+  border-color: #4b5563;
 }

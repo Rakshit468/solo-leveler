@@ -93,8 +93,9 @@ const QuestCard = ({ quest, onQuestComplete }) => {
   };
 
   const isCompleted = quest.status === "completed";
+  const compareDate = quest.startDateTime || quest.dueDate;
   const isOverdue =
-    quest.dueDate && new Date(quest.dueDate) < new Date() && !isCompleted;
+    compareDate && new Date(compareDate) < new Date() && !isCompleted;
 
   return (
     <motion.div
@@ -154,7 +155,14 @@ const QuestCard = ({ quest, onQuestComplete }) => {
                       isOverdue ? "text-error-400" : "text-gray-400"
                     )}
                   >
-                    {new Date(quest.dueDate).toLocaleDateString()}
+                    {quest.startDateTime
+                      ? `${new Date(quest.startDateTime).toLocaleDateString()} ${new Date(
+                          quest.startDateTime
+                        ).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}`
+                      : new Date(quest.dueDate).toLocaleDateString()}
                   </span>
                 </div>
               )}

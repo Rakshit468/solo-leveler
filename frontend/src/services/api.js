@@ -25,6 +25,8 @@ api.interceptors.request.use(
 // Auth API (paths adjusted — no leading /api)
 export const authAPI = {
   register: (userData) => api.post("/auth/register", userData),
+  verifySignupOtp: (payload) => api.post("/auth/register/verify-otp", payload),
+  resendSignupOtp: (payload) => api.post("/auth/register/resend-otp", payload),
   login: (credentials) => api.post("/auth/login", credentials),
   getProfile: () => api.get("/auth/profile"),
   updateProfile: (profileData) => api.put("/auth/profile", profileData),

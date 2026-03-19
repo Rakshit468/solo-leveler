@@ -4,6 +4,8 @@ import passport from "../config/passport.js";
 import jwt from "jsonwebtoken";
 import {
   register,
+  verifySignupOtp,
+  resendSignupOtp,
   login,
   getProfile,
   updateProfile,
@@ -36,6 +38,33 @@ router.post(
       .withMessage("Character name must be between 1-30 characters"),
   ],
   register
+);
+
+router.post(
+  "/register/verify-otp",
+  [
+    body("email")
+      .isEmail()
+      .withMessage("Please provide a valid email")
+      .normalizeEmail(),
+    body("otp")
+      .isLength({ min: 6, max: 6 })
+      .withMessage("OTP must be 6 digits")
+      .isNumeric()
+      .withMessage("OTP must be numeric"),
+  ],
+  verifySignupOtp
+);
+
+router.post(
+  "/register/resend-otp",
+  [
+    body("email")
+      .isEmail()
+      .withMessage("Please provide a valid email")
+      .normalizeEmail(),
+  ],
+  resendSignupOtp
 );
 
 // Login route with validation

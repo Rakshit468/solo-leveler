@@ -86,11 +86,25 @@ const userSchema = new mongoose.Schema(
         default: "dark",
         enum: ["light", "dark"],
       },
+      timezone: {
+        type: String,
+        default: "UTC",
+      },
       notifications: {
         questReminders: { type: Boolean, default: true },
         levelUps: { type: Boolean, default: true },
         achievements: { type: Boolean, default: true },
       },
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: true,
+    },
+    emailVerification: {
+      otpHash: String,
+      otpExpiresAt: Date,
+      otpAttempts: { type: Number, default: 0 },
+      lastSentAt: Date,
     },
     integrations: {
       googleCalendar: {

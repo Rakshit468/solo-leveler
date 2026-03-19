@@ -31,6 +31,7 @@ passport.use(
             // Link Google account to the existing user
             user.google.id = profile.id;
             user.google.displayName = profile.displayName;
+            user.isEmailVerified = true;
             await user.save();
           } else {
             // Create a new user with a unique username
@@ -41,6 +42,7 @@ passport.use(
             user = await User.create({
               username: newUsername,
               email: profile.emails[0].value,
+              isEmailVerified: true,
               google: {
                 id: profile.id,
                 displayName: profile.displayName,

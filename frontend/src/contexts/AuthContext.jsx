@@ -74,10 +74,19 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authAPI.register(userData);
       if (response.data.success) {
-        const { token, user } = response.data.data;
+        const payload = response.data.data || {};
+        if (payload.requiresVerification) {
+          return {
+            success: true,
+            requiresVerification: true,
+            email: payload.email,
+          };
+        }
+
+        const { token, user } = payload;
         setAuthToken(token);
         setUser(user);
-        return { success: true };
+        return { success: true, requiresVerification: false };
       }
     } catch (error) {
       console.error("Register error:", error);

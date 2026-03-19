@@ -1,12 +1,38 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import User from '../models/User.js';
 import { validationResult } from 'express-validator';
+import { sendOtpEmail } from '../services/emailService.js';
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });
 };
+
+const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000));
+
+const hashOtp = (otp) =>
+  crypto.createHash('sha256').update(String(otp)).digest('hex');
+
+const setUserOtp = (user, otp) => {
+  user.emailVerification = {
+    otpHash: hashOtp(otp),
+    otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    otpAttempts: 0,
+    lastSentAt: new Date(),
+  };
+};
+
+const buildAuthUser = (user) => ({
+  id: user._id,
+  username: user.username,
+  email: user.email,
+  character: user.character,
+  achievements: user.achievements,
+  streaks: user.streaks,
+  preferences: user.preferences,
+});
 
 export const register = async (req, res) => {
   try {
@@ -17,51 +43,173 @@ export const register = async (req, res) => {
 
     const { username, email, password, characterName } = req.body;
 
-    // Check if user exists
-    const userExists = await User.findOne({ $or: [{ email }, { username }] });
-    if (userExists) {
+    let user = await User.findOne({ email });
+
+    if (user && user.isEmailVerified) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create user
-    const user = await User.create({
-      username,
-      email,
-      password,
-      character: {
-        name: characterName || username,
-        avatar: 'default-avatar.png',
-        level: 1,
-        xp: 0,
-        xpToNextLevel: 100,
-        stats: {
-          strength: 10,
-          intelligence: 10,
-          productivity: 10,
-          consistency: 10,
-          stamina: 100
+    if (!user) {
+      const usernameExists = await User.findOne({ username });
+      if (usernameExists) {
+        return res.status(400).json({ message: 'Username already exists' });
+      }
+
+      user = new User({
+        username,
+        email,
+        password,
+        isEmailVerified: false,
+        character: {
+          name: characterName || username,
+          avatar: 'default-avatar.png',
+          level: 1,
+          xp: 0,
+          xpToNextLevel: 100,
+          stats: {
+            strength: 10,
+            intelligence: 10,
+            productivity: 10,
+            consistency: 10,
+            stamina: 100,
+          },
+        },
+      });
+    } else {
+      if (username !== user.username) {
+        const usernameTaken = await User.findOne({
+          username,
+          _id: { $ne: user._id },
+        });
+        if (usernameTaken) {
+          return res.status(400).json({ message: 'Username already exists' });
         }
       }
-    });
 
-    const token = generateToken(user._id);
+      user.username = username;
+      user.password = password;
+      user.character.name = characterName || username;
+      user.isEmailVerified = false;
+    }
+
+    const otp = generateOtp();
+    setUserOtp(user, otp);
+    await user.save();
+
+    await sendOtpEmail({
+      to: email,
+      otp,
+      username: user.character?.name || user.username,
+    });
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: 'OTP sent to your email',
       data: {
-        user: {
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          character: user.character
-        },
-        token
-      }
+        requiresVerification: true,
+        email: user.email,
+      },
     });
   } catch (error) {
     console.error('Register error:', error);
     res.status(500).json({ message: 'Server error during registration' });
+  }
+};
+
+export const verifySignupOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: 'Email already verified' });
+    }
+
+    const verification = user.emailVerification || {};
+    if (!verification.otpHash || !verification.otpExpiresAt) {
+      return res.status(400).json({ message: 'OTP not found. Please request a new OTP.' });
+    }
+
+    if (verification.otpAttempts >= 5) {
+      return res.status(429).json({ message: 'Too many failed attempts. Please request a new OTP.' });
+    }
+
+    if (new Date(verification.otpExpiresAt) < new Date()) {
+      return res.status(400).json({ message: 'OTP expired. Please request a new OTP.' });
+    }
+
+    if (verification.otpHash !== hashOtp(otp)) {
+      user.emailVerification.otpAttempts = (verification.otpAttempts || 0) + 1;
+      await user.save();
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerification = {
+      otpHash: null,
+      otpExpiresAt: null,
+      otpAttempts: 0,
+      lastSentAt: null,
+    };
+    await user.save();
+
+    const token = generateToken(user._id);
+    res.json({
+      success: true,
+      message: 'Email verified successfully',
+      data: {
+        user: buildAuthUser(user),
+        token,
+      },
+    });
+  } catch (error) {
+    console.error('Verify signup OTP error:', error);
+    res.status(500).json({ message: 'Server error verifying OTP' });
+  }
+};
+
+export const resendSignupOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: 'Email already verified' });
+    }
+
+    const lastSentAt = user.emailVerification?.lastSentAt
+      ? new Date(user.emailVerification.lastSentAt).getTime()
+      : 0;
+    if (Date.now() - lastSentAt < 60 * 1000) {
+      return res.status(429).json({ message: 'Please wait before requesting another OTP' });
+    }
+
+    const otp = generateOtp();
+    setUserOtp(user, otp);
+    await user.save();
+
+    await sendOtpEmail({
+      to: email,
+      otp,
+      username: user.character?.name || user.username,
+    });
+
+    res.json({
+      success: true,
+      message: 'A new OTP has been sent',
+      data: { email },
+    });
+  } catch (error) {
+    console.error('Resend signup OTP error:', error);
+    res.status(500).json({ message: 'Server error resending OTP' });
   }
 };
 
@@ -74,19 +222,23 @@ export const login = async (req, res) => {
 
     const { email, password } = req.body;
 
-    // Check for user
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Check password
+    if (!user.isEmailVerified) {
+      return res.status(403).json({
+        message: 'Please verify your email with OTP before logging in',
+        requiresVerification: true,
+      });
+    }
+
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Update streak info
     const now = new Date();
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);
@@ -118,16 +270,9 @@ export const login = async (req, res) => {
       success: true,
       message: 'Login successful',
       data: {
-        user: {
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          character: user.character,
-          achievements: user.achievements,
-          streaks: user.streaks
-        },
-        token
-      }
+        user: buildAuthUser(user),
+        token,
+      },
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -140,7 +285,7 @@ export const getProfile = async (req, res) => {
     const user = await User.findById(req.user.id).select('-password');
     res.json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
     console.error('Get profile error:', error);
@@ -166,7 +311,7 @@ export const updateProfile = async (req, res) => {
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      data: user
+      data: user,
     });
   } catch (error) {
     console.error('Update profile error:', error);

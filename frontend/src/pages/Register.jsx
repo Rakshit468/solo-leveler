@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { User, Mail, Lock, Sword } from "lucide-react";
+import { User, Mail, Lock, Sword, KeyRound } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { authAPI } from "../services/api";
 import toast from "react-hot-toast";
 
 const Register = () => {
@@ -13,6 +14,10 @@ const Register = () => {
     characterName: "",
   });
   const [loading, setLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [requiresVerification, setRequiresVerification] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState("");
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -30,8 +35,14 @@ const Register = () => {
     const result = await register(formData);
 
     if (result.success) {
-      toast.success("Welcome to the Guild, Hunter!");
-      navigate("/dashboard");
+      if (result.requiresVerification) {
+        setRequiresVerification(true);
+        setPendingEmail(result.email || formData.email);
+        toast.success("OTP sent to your email. Enter it to complete signup.");
+      } else {
+        toast.success("Welcome to the Guild, Hunter!");
+        navigate("/dashboard");
+      }
     } else {
       toast.error(result.error);
     }
@@ -43,6 +54,41 @@ const Register = () => {
     const baseApiUrl = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
     const origin = encodeURIComponent(window.location.origin);
     window.location.href = `${baseApiUrl}/api/auth/google?origin=${origin}`;
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (otp.length !== 6) {
+      toast.error("Please enter a 6-digit OTP");
+      return;
+    }
+
+    setOtpLoading(true);
+    try {
+      const response = await authAPI.verifySignupOtp({
+        email: pendingEmail,
+        otp,
+      });
+
+      if (response.data.success) {
+        localStorage.setItem("token", response.data.data.token);
+        toast.success("Email verified! Welcome to the Guild.");
+        navigate("/auth/callback?token=" + response.data.data.token);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "OTP verification failed");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    try {
+      const response = await authAPI.resendSignupOtp({ email: pendingEmail });
+      toast.success(response.data?.message || "A new OTP has been sent");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to resend OTP");
+    }
   };
 
   return (
@@ -70,151 +116,199 @@ const Register = () => {
           </p>
         </div>
 
-        {/* Register Form */}
-        <motion.form
-          className="mt-8 space-y-6"
-          onSubmit={handleSubmit}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="username" className="sr-only">
-                Username
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  required
-                  className="input pl-10"
-                  placeholder="Username"
-                  value={formData.username}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  className="input pl-10"
-                  placeholder="Email address"
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="characterName" className="sr-only">
-                Character Name
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Sword className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="characterName"
-                  name="characterName"
-                  type="text"
-                  required
-                  className="input pl-10"
-                  placeholder="Character Name"
-                  value={formData.characterName}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  className="input pl-10"
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <motion.button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full py-3"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+        {!requiresVerification ? (
+          <>
+            {/* Register Form */}
+            <motion.form
+              className="mt-8 space-y-6"
+              onSubmit={handleSubmit}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
             >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                  Creating Account...
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="username" className="sr-only">
+                    Username
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <User className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      id="username"
+                      name="username"
+                      type="text"
+                      required
+                      className="input pl-10"
+                      placeholder="Username"
+                      value={formData.username}
+                      onChange={handleChange}
+                    />
+                  </div>
                 </div>
-              ) : (
-                "Create Account"
-              )}
-            </motion.button>
-          </div>
 
-          <div className="text-center">
-            <p className="text-gray-400">
-              Already a member?{" "}
-              <Link
-                to="/login"
-                className="font-medium text-primary-400 hover:text-primary-300 transition-colors"
-              >
-                Sign In
-              </Link>
-            </p>
-          </div>
-        </motion.form>
+                <div>
+                  <label htmlFor="email" className="sr-only">
+                    Email address
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Mail className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      required
+                      className="input pl-10"
+                      placeholder="Email address"
+                      value={formData.email}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
 
-        {/* Or divider */}
-        <div className="flex items-center my-6">
-          <div className="flex-grow border-t border-dark-700"></div>
-          <span className="mx-4 text-gray-500">or</span>
-          <div className="flex-grow border-t border-dark-700"></div>
-        </div>
+                <div>
+                  <label htmlFor="characterName" className="sr-only">
+                    Character Name
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Sword className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      id="characterName"
+                      name="characterName"
+                      type="text"
+                      required
+                      className="input pl-10"
+                      placeholder="Character Name"
+                      value={formData.characterName}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
 
-        {/* Google Sign Up Button */}
-        <button
-          className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-lg border border-dark-700 bg-white hover:bg-gray-100 transition-colors shadow-sm mb-6"
-          onClick={handleGoogleLogin}
-        >
-          <img
-            src="https://www.svgrepo.com/show/475656/google-color.svg"
-            alt="Google"
-            className="h-6 w-6"
-          />
-          <span className="text-gray-800 font-medium">Sign up with Google</span>
-        </button>
+                <div>
+                  <label htmlFor="password" className="sr-only">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      id="password"
+                      name="password"
+                      type="password"
+                      required
+                      className="input pl-10"
+                      placeholder="Password"
+                      value={formData.password}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <motion.button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-primary w-full py-3"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                      Creating Account...
+                    </div>
+                  ) : (
+                    "Create Account"
+                  )}
+                </motion.button>
+              </div>
+
+              <div className="text-center">
+                <p className="text-gray-400">
+                  Already a member?{" "}
+                  <Link
+                    to="/login"
+                    className="font-medium text-primary-400 hover:text-primary-300 transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                </p>
+              </div>
+            </motion.form>
+
+            {/* Or divider */}
+            <div className="flex items-center my-6">
+              <div className="flex-grow border-t border-dark-700"></div>
+              <span className="mx-4 text-gray-500">or</span>
+              <div className="flex-grow border-t border-dark-700"></div>
+            </div>
+
+            {/* Google Sign Up Button */}
+            <button
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-lg border border-dark-700 bg-white hover:bg-gray-100 transition-colors shadow-sm mb-6"
+              onClick={handleGoogleLogin}
+            >
+              <img
+                src="https://www.svgrepo.com/show/475656/google-color.svg"
+                alt="Google"
+                className="h-6 w-6"
+              />
+              <span className="text-gray-800 font-medium">Sign up with Google</span>
+            </button>
+          </>
+        ) : (
+          <motion.form
+            className="mt-8 space-y-6"
+            onSubmit={handleVerifyOtp}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <div className="rounded-lg border border-primary-500/30 bg-primary-500/10 p-3 text-sm text-primary-200">
+              OTP sent to <span className="font-semibold">{pendingEmail}</span>
+            </div>
+
+            <div>
+              <label htmlFor="otp" className="sr-only">
+                OTP Code
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <KeyRound className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="otp"
+                  name="otp"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  required
+                  className="input pl-10 tracking-[0.3em] text-center"
+                  placeholder="Enter 6-digit OTP"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button type="button" className="btn-outline" onClick={handleResendOtp}>
+                Resend OTP
+              </button>
+              <button type="submit" disabled={otpLoading} className="btn-primary">
+                {otpLoading ? "Verifying..." : "Verify & Continue"}
+              </button>
+            </div>
+          </motion.form>
+        )}
       </motion.div>
     </div>
   );

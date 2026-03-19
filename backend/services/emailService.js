@@ -9,19 +9,35 @@ const hasSmtpConfig = () => {
   );
 };
 
+const parseBoolean = (value, fallback = false) => {
+  if (typeof value === "boolean") return value;
+  if (typeof value !== "string") return fallback;
+  return value.trim().toLowerCase() === "true";
+};
+
 const getTransporter = () => {
   if (!hasSmtpConfig()) {
     return null;
   }
 
+  const smtpPort = Number(process.env.SMTP_PORT) || 587;
+  const secure =
+    typeof process.env.SMTP_SECURE === "string"
+      ? parseBoolean(process.env.SMTP_SECURE, smtpPort === 465)
+      : smtpPort === 465;
+
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT),
-    secure: Number(process.env.SMTP_PORT) === 465,
+    port: smtpPort,
+    secure,
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT_MS) || 10000,
+    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT_MS) || 10000,
+    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT_MS) || 20000,
+    requireTLS: parseBoolean(process.env.SMTP_REQUIRE_TLS, false),
   });
 };
 

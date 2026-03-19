@@ -35,6 +35,23 @@ const formatDateTime = (value) => {
   return new Date(value).toLocaleString();
 };
 
+const formatDateOnly = (value) => {
+  if (!value) {
+    return undefined;
+  }
+  return new Date(value).toISOString().split("T")[0];
+};
+
+const addOneDayToDateOnly = (dateOnly) => {
+  if (!dateOnly) {
+    return undefined;
+  }
+  const [year, month, day] = dateOnly.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().split("T")[0];
+};
+
 const Calendar = () => {
   const [loading, setLoading] = useState(true);
   const [syncLoading, setSyncLoading] = useState(false);
@@ -96,8 +113,9 @@ const Calendar = () => {
       .filter((quest) => quest.dueDate || quest.startDateTime)
       .map((quest) => {
         const hasSlot = Boolean(quest.startDateTime);
-        const start = hasSlot ? quest.startDateTime : quest.dueDate;
-        const end = hasSlot ? quest.endDateTime : undefined;
+        const dueDateOnly = formatDateOnly(quest.dueDate);
+        const start = hasSlot ? quest.startDateTime : dueDateOnly;
+        const end = hasSlot ? quest.endDateTime : addOneDayToDateOnly(dueDateOnly);
 
         return {
           id: quest._id,

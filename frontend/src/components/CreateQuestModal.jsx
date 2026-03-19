@@ -19,6 +19,8 @@ const CreateQuestModal = ({ onClose, onQuestCreate }) => {
   })
   const [loading, setLoading] = useState(false)
 
+  const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+
   const handleChange = (e) => {
     setFormData(prev => ({
       ...prev,
@@ -43,22 +45,27 @@ const CreateQuestModal = ({ onClose, onQuestCreate }) => {
         return
       }
 
+      const dueDateISO = formData.dueDate
+        ? new Date(`${formData.dueDate}T00:00:00`).toISOString()
+        : undefined
+
       const startDateTime =
         formData.dueDate && formData.startTime
-          ? `${formData.dueDate}T${formData.startTime}:00`
+          ? new Date(`${formData.dueDate}T${formData.startTime}:00`).toISOString()
           : undefined
 
       const endDateTime =
         formData.dueDate && formData.endTime
-          ? `${formData.dueDate}T${formData.endTime}:00`
+          ? new Date(`${formData.dueDate}T${formData.endTime}:00`).toISOString()
           : undefined
 
       const questData = {
         ...formData,
         tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-        dueDate: formData.dueDate || undefined,
+        dueDate: dueDateISO,
         startDateTime,
         endDateTime,
+        timezone: browserTimezone,
       }
 
       delete questData.startTime

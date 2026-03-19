@@ -54,6 +54,10 @@ const questSchema = new mongoose.Schema({
   dueDate: Date,
   startDateTime: Date,
   endDateTime: Date,
+  timezone: {
+    type: String,
+    default: "UTC",
+  },
   googleCalendarEventId: String,
   completedAt: Date,
   completionHistory: [{

@@ -23,6 +23,24 @@ const formatLocalDate = (dateValue) => {
   return `${year}-${month}-${day}`;
 };
 
+const formatDateInTimeZone = (dateValue, timeZone = "UTC") => {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  return formatter.format(new Date(dateValue));
+};
+
+const addDaysToDateString = (dateString, days) => {
+  const [year, month, day] = dateString.split("-").map(Number);
+  const utcDate = new Date(Date.UTC(year, month - 1, day));
+  utcDate.setUTCDate(utcDate.getUTCDate() + days);
+  return formatLocalDate(utcDate);
+};
+
 export const buildGoogleCalendarAuthUrl = (userId) => {
   const oauth2Client = createOAuthClient();
 
@@ -63,6 +81,8 @@ export const exchangeGoogleCalendarCode = async (code, state) => {
 };
 
 const getQuestEventTimes = (quest) => {
+  const timeZone = quest.timezone || "UTC";
+
   if (quest.startDateTime) {
     const start = new Date(quest.startDateTime);
     const end = quest.endDateTime
@@ -70,19 +90,18 @@ const getQuestEventTimes = (quest) => {
       : new Date(start.getTime() + 60 * 60 * 1000);
 
     return {
-      start: { dateTime: start.toISOString() },
-      end: { dateTime: end.toISOString() },
+      start: { dateTime: start.toISOString(), timeZone },
+      end: { dateTime: end.toISOString(), timeZone },
     };
   }
 
   if (quest.dueDate) {
-    const dueDate = new Date(quest.dueDate);
-    const nextDate = new Date(dueDate);
-    nextDate.setDate(nextDate.getDate() + 1);
+    const dateInZone = formatDateInTimeZone(quest.dueDate, timeZone);
+    const nextDateInZone = addDaysToDateString(dateInZone, 1);
 
     return {
-      start: { date: formatLocalDate(dueDate) },
-      end: { date: formatLocalDate(nextDate) },
+      start: { date: dateInZone },
+      end: { date: nextDateInZone },
     };
   }
 

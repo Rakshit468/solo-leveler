@@ -101,6 +101,7 @@ export const createQuest = async (req, res) => {
       dueDate,
       startDateTime,
       endDateTime,
+      timezone,
       recurrence,
       tags,
       priority,
@@ -116,6 +117,10 @@ export const createQuest = async (req, res) => {
       dueDate: parseDate(dueDate),
       startDateTime: parseDate(startDateTime),
       endDateTime: parseDate(endDateTime),
+      timezone:
+        timezone ||
+        req.user?.preferences?.timezone ||
+        "UTC",
       recurrence,
       priority,
       tags: tags || [],
@@ -169,6 +174,7 @@ export const updateQuest = async (req, res) => {
       dueDate,
       startDateTime,
       endDateTime,
+      timezone,
       priority,
       tags,
     } = req.body;
@@ -184,6 +190,7 @@ export const updateQuest = async (req, res) => {
     if (startDateTime !== undefined)
       quest.startDateTime = parseDate(startDateTime);
     if (endDateTime !== undefined) quest.endDateTime = parseDate(endDateTime);
+    if (timezone !== undefined) quest.timezone = timezone || "UTC";
     if (priority !== undefined) quest.priority = priority;
     if (tags !== undefined) quest.tags = tags;
 

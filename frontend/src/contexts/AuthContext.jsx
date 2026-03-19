@@ -90,9 +90,13 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Register error:", error);
+      const timeoutMessage =
+        error.code === "ECONNABORTED"
+          ? "Request timed out. Please try again."
+          : null;
       return {
         success: false,
-        error: error.response?.data?.message || "Registration failed",
+        error: timeoutMessage || error.response?.data?.message || "Registration failed",
       };
     }
   };

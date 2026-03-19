@@ -15,7 +15,13 @@ const parseBoolean = (value, fallback = false) => {
   return value.trim().toLowerCase() === "true";
 };
 
-const getTransporter = () => {
+const getTimeouts = () => ({
+  connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT_MS) || 10000,
+  greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT_MS) || 10000,
+  socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT_MS) || 20000,
+});
+
+const getPrimaryTransportConfig = () => {
   if (!hasSmtpConfig()) {
     return null;
   }
@@ -26,31 +32,77 @@ const getTransporter = () => {
       ? parseBoolean(process.env.SMTP_SECURE, smtpPort === 465)
       : smtpPort === 465;
 
-  return nodemailer.createTransport({
+  return {
     host: process.env.SMTP_HOST,
     port: smtpPort,
     secure,
+    requireTLS: parseBoolean(process.env.SMTP_REQUIRE_TLS, false),
+  };
+};
+
+const buildTransportConfigs = () => {
+  const primary = getPrimaryTransportConfig();
+  if (!primary) {
+    return [];
+  }
+
+  const configs = [primary];
+  const smtpUser = (process.env.SMTP_USER || "").toLowerCase();
+  const isGmailUser = smtpUser.endsWith("@gmail.com") || smtpUser.endsWith("@googlemail.com");
+  const forceGmailFallback = parseBoolean(process.env.SMTP_FORCE_GMAIL_FALLBACK, true);
+
+  if (isGmailUser && forceGmailFallback) {
+    configs.push(
+      {
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        requireTLS: true,
+      },
+      {
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        requireTLS: false,
+      }
+    );
+  }
+
+  const seen = new Set();
+  return configs.filter((config) => {
+    const key = `${config.host}:${config.port}:${config.secure}:${config.requireTLS}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const sendWithTransportConfig = async (config, mailOptions) => {
+  const transporter = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
-    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT_MS) || 10000,
-    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT_MS) || 10000,
-    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT_MS) || 20000,
-    requireTLS: parseBoolean(process.env.SMTP_REQUIRE_TLS, false),
+    requireTLS: config.requireTLS,
+    ...getTimeouts(),
   });
+
+  return transporter.sendMail(mailOptions);
 };
 
 export const sendOtpEmail = async ({ to, otp, username }) => {
   const fromEmail = process.env.SMTP_FROM || process.env.SMTP_USER;
-  const transporter = getTransporter();
+  const transportConfigs = buildTransportConfigs();
 
-  if (!transporter) {
+  if (!transportConfigs.length) {
     console.log(`[OTP DEV FALLBACK] ${to} -> ${otp}`);
     return;
   }
 
-  await transporter.sendMail({
+  const mailOptions = {
     from: fromEmail,
     to,
     subject: "Your Solo Leveling verification code",
@@ -64,5 +116,19 @@ export const sendOtpEmail = async ({ to, otp, username }) => {
         <p style="color: #6b7280; margin: 0;">This code expires in 10 minutes.</p>
       </div>
     `,
-  });
+  };
+
+  const errors = [];
+  for (const config of transportConfigs) {
+    try {
+      await sendWithTransportConfig(config, mailOptions);
+      return;
+    } catch (error) {
+      errors.push(
+        `${config.host}:${config.port} secure=${config.secure} tls=${config.requireTLS} -> ${error?.code || error?.message || "unknown error"}`
+      );
+    }
+  }
+
+  throw new Error(`All SMTP transport attempts failed. ${errors.join(" | ")}`);
 };

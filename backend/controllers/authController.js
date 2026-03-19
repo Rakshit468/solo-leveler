@@ -4,6 +4,8 @@ import User from '../models/User.js';
 import { validationResult } from 'express-validator';
 import { sendOtpEmail } from '../services/emailService.js';
 
+const isTrue = (value) => String(value).toLowerCase() === 'true';
+
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '30d',
@@ -96,18 +98,37 @@ export const register = async (req, res) => {
     setUserOtp(user, otp);
     await user.save();
 
-    await sendOtpEmail({
-      to: email,
-      otp,
-      username: user.character?.name || user.username,
-    });
+    let emailDeliveryFailed = false;
+    try {
+      await sendOtpEmail({
+        to: email,
+        otp,
+        username: user.character?.name || user.username,
+      });
+    } catch (mailError) {
+      emailDeliveryFailed = true;
+      console.error('Register OTP email error:', mailError?.message || mailError);
+    }
+
+    const allowOtpInResponse = isTrue(process.env.ALLOW_OTP_IN_RESPONSE);
+
+    if (emailDeliveryFailed && !allowOtpInResponse) {
+      return res.status(503).json({
+        success: false,
+        message:
+          'Unable to send OTP email right now. Please try again shortly or contact support.',
+      });
+    }
 
     res.status(201).json({
       success: true,
-      message: 'OTP sent to your email',
+      message: emailDeliveryFailed
+        ? 'Email delivery failed. OTP returned in response (temporary fallback enabled).'
+        : 'OTP sent to your email',
       data: {
         requiresVerification: true,
         email: user.email,
+        otp: emailDeliveryFailed && allowOtpInResponse ? otp : undefined,
       },
     });
   } catch (error) {
@@ -196,16 +217,37 @@ export const resendSignupOtp = async (req, res) => {
     setUserOtp(user, otp);
     await user.save();
 
-    await sendOtpEmail({
-      to: email,
-      otp,
-      username: user.character?.name || user.username,
-    });
+    let emailDeliveryFailed = false;
+    try {
+      await sendOtpEmail({
+        to: email,
+        otp,
+        username: user.character?.name || user.username,
+      });
+    } catch (mailError) {
+      emailDeliveryFailed = true;
+      console.error('Resend OTP email error:', mailError?.message || mailError);
+    }
+
+    const allowOtpInResponse = isTrue(process.env.ALLOW_OTP_IN_RESPONSE);
+
+    if (emailDeliveryFailed && !allowOtpInResponse) {
+      return res.status(503).json({
+        success: false,
+        message:
+          'Unable to send OTP email right now. Please try again shortly or contact support.',
+      });
+    }
 
     res.json({
       success: true,
-      message: 'A new OTP has been sent',
-      data: { email },
+      message: emailDeliveryFailed
+        ? 'Email delivery failed. OTP returned in response (temporary fallback enabled).'
+        : 'A new OTP has been sent',
+      data: {
+        email,
+        otp: emailDeliveryFailed && allowOtpInResponse ? otp : undefined,
+      },
     });
   } catch (error) {
     console.error('Resend signup OTP error:', error);

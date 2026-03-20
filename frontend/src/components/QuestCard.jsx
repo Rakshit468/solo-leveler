@@ -143,7 +143,7 @@ const QuestCard = ({ quest, onQuestComplete }) => {
     <>
       <motion.div
         className={clsx(
-          "card hover-lift",
+          "card hover-lift overflow-hidden",
           isCompleted && "opacity-75 bg-success-500/10",
           isOverdue && "border-error-500/50"
         )}
@@ -191,7 +191,7 @@ const QuestCard = ({ quest, onQuestComplete }) => {
             <p className="text-gray-400 text-sm mb-3">{quest.description}</p>
           )}
 
-          <div className="mb-3 flex items-center gap-2 text-xs text-gray-300">
+          <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-gray-300">
             <span className="inline-flex items-center gap-1 rounded-md bg-dark-700 px-2 py-1">
               <Flame className="h-3.5 w-3.5 text-orange-400" />
               Effort: {quest.effort || "medium"}
@@ -202,7 +202,7 @@ const QuestCard = ({ quest, onQuestComplete }) => {
             </span>
           </div>
 
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center space-x-1">
                 <Star className="h-4 w-4 text-accent-500" />
@@ -216,7 +216,7 @@ const QuestCard = ({ quest, onQuestComplete }) => {
                   <Clock className="h-4 w-4 text-gray-400" />
                   <span
                     className={clsx(
-                      "text-sm",
+                      "max-w-[170px] truncate text-sm sm:max-w-none",
                       isOverdue ? "text-error-400" : "text-gray-400"
                     )}
                   >
@@ -234,11 +234,11 @@ const QuestCard = ({ quest, onQuestComplete }) => {
             </div>
 
             {!isCompleted && (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="grid w-full grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setRescheduleOpen((prev) => !prev)}
-                  className="btn text-sm inline-flex items-center gap-1"
+                  className="btn text-sm inline-flex h-10 items-center justify-center gap-1 w-full"
                 >
                   <CalendarClock className="h-4 w-4" />
                   Reschedule
@@ -246,22 +246,22 @@ const QuestCard = ({ quest, onQuestComplete }) => {
                 <button
                   type="button"
                   onClick={() => setFocusOpen(true)}
-                  className="btn-secondary text-sm"
+                  className="btn-secondary text-sm h-10 w-full"
                 >
                   Start Focus
                 </button>
                 <button
                   onClick={handleComplete}
                   disabled={loading}
-                  className="btn-success text-sm"
+                  className="btn-success text-sm h-10 w-full col-span-2"
                 >
                   {loading ? (
                     <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
                   ) : (
-                    <>
+                    <span className="inline-flex items-center justify-center gap-1">
                       <Check className="h-4 w-4 mr-1" />
                       Complete
-                    </>
+                    </span>
                   )}
                 </button>
               </div>
@@ -278,17 +278,17 @@ const QuestCard = ({ quest, onQuestComplete }) => {
           {rescheduleOpen && !isCompleted && (
             <div className="mt-3 rounded-lg border border-dark-700 bg-dark-900/60 p-3">
               <p className="mb-2 text-xs text-gray-400">Pick a new date and time</p>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="grid grid-cols-1 gap-2">
                 <input
                   type="datetime-local"
-                  className="input"
+                  className="input min-w-0 w-full"
                   value={rescheduleAt}
                   onChange={(event) => setRescheduleAt(event.target.value)}
                   disabled={rescheduleSaving}
                 />
                 <button
                   type="button"
-                  className="btn-primary"
+                  className="btn-primary h-10 w-full"
                   onClick={handleReschedule}
                   disabled={rescheduleSaving}
                 >

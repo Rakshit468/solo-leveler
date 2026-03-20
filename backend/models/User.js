@@ -82,6 +82,8 @@ const userSchema = new mongoose.Schema(
       shieldCharges: { type: Number, default: 1, min: 0, max: 1 },
       shieldLastRefillAt: { type: Date, default: Date.now },
       shieldLastUsedAt: Date,
+      pendingShieldStreak: { type: Number, default: 0, min: 0 },
+      pendingShieldCreatedAt: Date,
     },
     onboarding: {
       completed: { type: Boolean, default: false },
@@ -109,6 +111,10 @@ const userSchema = new mongoose.Schema(
       timezone: {
         type: String,
         default: "UTC",
+      },
+      shieldAutoUse: {
+        type: Boolean,
+        default: true,
       },
       notifications: {
         questReminders: { type: Boolean, default: true },

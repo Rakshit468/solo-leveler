@@ -34,6 +34,7 @@ export const authAPI = {
   getOnboardingOptions: () => api.get("/auth/onboarding/options"),
   setupOnboarding: (payload) => api.post("/auth/onboarding/setup", payload),
   updateStarterQuests: (payload) => api.put("/auth/onboarding/starter-quests", payload),
+  useShieldNow: (payload) => api.post("/auth/streak/use-shield", payload),
 };
 
 // Quest API

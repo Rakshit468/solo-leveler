@@ -11,9 +11,16 @@ import {
   STARTER_QUESTS,
 } from '../config/onboardingConfig.js';
 import {
-  applyShieldForMissedDay,
+  applyAutoShieldForYesterdayGap,
+  applyShieldDate,
+  computeCurrentStreakFromDateSet,
+  dateKeyIsValid,
+  getMostRecentActiveDateKey,
+  getRecentMissingDateKeys,
+  mergeActiveDateSets,
   refreshShield,
   syncDualClassUnlock,
+  toDateKey,
 } from '../services/streakService.js';
 
 const isTrue = (value) => String(value).toLowerCase() === 'true';
@@ -60,6 +67,38 @@ const buildAuthUser = (user) => ({
   preferences: user.preferences,
   onboarding: user.onboarding,
 });
+
+const getCompletedQuestDateKeys = async (userId, now = new Date()) => {
+  const completed = await Quest.find({
+    user: userId,
+    status: 'completed',
+    completedAt: { $ne: null, $lte: now },
+  }).select('completedAt');
+
+  return [...new Set(completed.map((item) => toDateKey(item.completedAt)))];
+};
+
+const recomputeUserStreak = async (user, now = new Date()) => {
+  const activityDateKeys = await getCompletedQuestDateKeys(user._id, now);
+  const shieldedDateKeys = user?.streaks?.shieldedDates || [];
+  const activeDateSet = mergeActiveDateSets(activityDateKeys, shieldedDateKeys);
+  applyAutoShieldForYesterdayGap(user, activeDateSet, now);
+
+  const streaks = user.streaks || {};
+  const currentStreak = computeCurrentStreakFromDateSet(activeDateSet, now);
+  streaks.current = currentStreak;
+  streaks.longest = Math.max(streaks.longest || 0, currentStreak);
+  const latestActiveDateKey = getMostRecentActiveDateKey(activeDateSet);
+  streaks.lastActivity = latestActiveDateKey
+    ? new Date(`${latestActiveDateKey}T00:00:00.000Z`)
+    : null;
+  user.streaks = streaks;
+
+  return {
+    activeDateSet,
+    currentStreak,
+  };
+};
 
 export const register = async (req, res) => {
   try {
@@ -314,30 +353,8 @@ export const login = async (req, res) => {
     const accountAgeMs = now.getTime() - new Date(user.createdAt).getTime();
     const isAtLeastOneDayOld = accountAgeMs >= 24 * 60 * 60 * 1000;
 
-    applyShieldForMissedDay(user, now);
     refreshShield(user, now);
-    const today = new Date(now);
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (user.streaks.lastActivity) {
-      const lastActivity = new Date(user.streaks.lastActivity);
-      lastActivity.setHours(0, 0, 0, 0);
-
-      if (lastActivity.getTime() === yesterday.getTime()) {
-        user.streaks.current += 1;
-      } else if (lastActivity.getTime() === today.getTime()) {
-        user.streaks.current = Math.max(user.streaks.current, 1);
-      } else {
-        user.streaks.current = 1;
-      }
-    } else {
-      user.streaks.current = 1;
-    }
-
-    user.streaks.longest = Math.max(user.streaks.longest, user.streaks.current);
-    user.streaks.lastActivity = now;
+    await recomputeUserStreak(user, now);
     user.onboarding = user.onboarding || {};
     if (!user.onboarding.dualClassUnlockStreak) {
       user.onboarding.dualClassUnlockStreak = DUAL_CLASS_UNLOCK_STREAK_DAYS;
@@ -548,5 +565,91 @@ export const updateStarterQuests = async (req, res) => {
   } catch (error) {
     console.error('Update starter quests error:', error);
     res.status(500).json({ message: 'Server error updating starter quests' });
+  }
+};
+
+export const useShieldNow = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const { targetDate } = req.body || {};
+    const now = new Date();
+    refreshShield(user, now);
+
+    if (!dateKeyIsValid(targetDate)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid targetDate. Use YYYY-MM-DD format.',
+      });
+    }
+
+    const todayKey = toDateKey(now);
+    if (targetDate >= todayKey) {
+      return res.status(400).json({
+        success: false,
+        message: 'Shield can only be used on past dates.',
+      });
+    }
+
+    const activityDateKeys = await getCompletedQuestDateKeys(user._id, now);
+    const activeSetBeforeShield = mergeActiveDateSets(
+      activityDateKeys,
+      user?.streaks?.shieldedDates || []
+    );
+
+    if (activeSetBeforeShield.has(targetDate)) {
+      return res.status(400).json({
+        success: false,
+        message: 'That date already has task activity or shield applied.',
+      });
+    }
+
+    const missingDateKeys = getRecentMissingDateKeys(activeSetBeforeShield, now, 365);
+    if (!missingDateKeys.includes(targetDate)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Selected date is not eligible for shield usage.',
+      });
+    }
+
+    const consumed = applyShieldDate(user, targetDate, now);
+    if (!consumed) {
+      return res.status(400).json({
+        success: false,
+        message: 'No shield charges available or shield already used for this date.',
+        data: {
+          shieldCharges: user?.streaks?.shieldCharges || 0,
+        },
+      });
+    }
+
+    const { activeDateSet } = await recomputeUserStreak(user, now);
+
+    syncDualClassUnlock(user);
+    await user.save();
+
+    await trackUserEvent(user._id, 'shield_used_manually', {
+      at: now,
+      streakAfterUse: user?.streaks?.current || 0,
+      targetDate,
+    });
+
+    const missingDateKeysAfterUse = getRecentMissingDateKeys(activeDateSet, now, 365);
+
+    res.json({
+      success: true,
+      message: 'Shield used successfully. Your streak is protected.',
+      data: {
+        user: buildAuthUser(user),
+        canUseShieldNow: (user?.streaks?.shieldCharges || 0) > 0 && missingDateKeysAfterUse.length > 0,
+        missingShieldDates: missingDateKeysAfterUse,
+      },
+    });
+  } catch (error) {
+    console.error('Use shield error:', error);
+    res.status(500).json({ message: 'Server error using shield' });
   }
 };

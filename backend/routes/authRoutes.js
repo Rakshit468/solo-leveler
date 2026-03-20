@@ -12,6 +12,7 @@ import {
   getOnboardingOptions,
   setupOnboarding,
   updateStarterQuests,
+  useShieldNow,
 } from "../controllers/authController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -98,6 +99,7 @@ router.post(
   setupOnboarding
 );
 router.put('/onboarding/starter-quests', protect, updateStarterQuests);
+router.post('/streak/use-shield', protect, useShieldNow);
 
 // --- Google OAuth Routes ---
 

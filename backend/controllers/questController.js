@@ -12,9 +12,15 @@ import {
   syncQuestWithGoogleCalendar,
 } from "../services/googleCalendarService.js";
 import {
-  applyShieldForMissedDay,
+  applyAutoShieldForYesterdayGap,
+  computeCurrentStreakFromDateSet,
+  computeDaysSinceLastActivity,
+  getMostRecentActiveDateKey,
+  getRecentMissingDateKeys,
+  mergeActiveDateSets,
   refreshShield,
   syncDualClassUnlock,
+  toDateKey,
 } from "../services/streakService.js";
 
 const getDifficultyBonus = (difficulty) => {
@@ -49,6 +55,40 @@ const parseDate = (value) => {
 
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+};
+
+const getCompletedQuestDateKeys = async (userId, now = new Date()) => {
+  const completed = await Quest.find({
+    user: userId,
+    status: "completed",
+    completedAt: { $ne: null, $lte: now },
+  }).select("completedAt");
+
+  return [...new Set(completed.map((item) => toDateKey(item.completedAt)))];
+};
+
+const recomputeUserStreak = async (user, now = new Date()) => {
+  const activityDateKeys = await getCompletedQuestDateKeys(user._id, now);
+  const shieldedDateKeys = user?.streaks?.shieldedDates || [];
+  const activeDateSet = mergeActiveDateSets(activityDateKeys, shieldedDateKeys);
+  applyAutoShieldForYesterdayGap(user, activeDateSet, now);
+
+  const streaks = user.streaks || {};
+  const currentStreak = computeCurrentStreakFromDateSet(activeDateSet, now);
+  streaks.current = currentStreak;
+  streaks.longest = Math.max(streaks.longest || 0, currentStreak);
+
+  const latestActiveDateKey = getMostRecentActiveDateKey(activeDateSet);
+  streaks.lastActivity = latestActiveDateKey
+    ? new Date(`${latestActiveDateKey}T00:00:00.000Z`)
+    : null;
+
+  user.streaks = streaks;
+
+  return {
+    activeDateSet,
+    currentStreak,
+  };
 };
 
 const createRecoveryQuestIfNeeded = async (user, missedDays) => {
@@ -332,8 +372,6 @@ export const completeQuest = async (req, res) => {
 
     // Update user XP and level using the new model method
     const user = await User.findById(req.user.id);
-    applyShieldForMissedDay(user, new Date());
-    refreshShield(user, new Date());
     const { leveledUp, newLevel, newXP, newXPToNextLevel } = await user.addXP(
       quest.xpReward,
       "quest",
@@ -346,30 +384,9 @@ export const completeQuest = async (req, res) => {
       }
     );
 
-    // Update streak info
     const now = new Date();
-    const today = new Date(now);
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (user.streaks.lastActivity) {
-      const lastActivity = new Date(user.streaks.lastActivity);
-      lastActivity.setHours(0, 0, 0, 0);
-
-      if (lastActivity.getTime() === yesterday.getTime()) {
-        user.streaks.current += 1;
-      } else if (lastActivity.getTime() === today.getTime()) {
-        user.streaks.current = Math.max(user.streaks.current, 1);
-      } else {
-        user.streaks.current = 1;
-      }
-    } else {
-      user.streaks.current = 1;
-    }
-
-    user.streaks.longest = Math.max(user.streaks.longest, user.streaks.current);
-    user.streaks.lastActivity = now;
+    refreshShield(user, now);
+    await recomputeUserStreak(user, now);
     syncDualClassUnlock(user);
 
     // Meaningful stat growth based on completion quality and quest challenge.
@@ -521,11 +538,17 @@ export const getDashboardData = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId);
-
-    const shieldResolution = applyShieldForMissedDay(user, new Date());
-    refreshShield(user, new Date());
+    const now = new Date();
+    refreshShield(user, now);
+    const { activeDateSet } = await recomputeUserStreak(user, now);
+    const missingShieldDates = getRecentMissingDateKeys(activeDateSet, now, 365);
+    const canUseShieldNow = (user?.streaks?.shieldCharges || 0) > 0 && missingShieldDates.length > 0;
     syncDualClassUnlock(user);
-    const recoveryQuest = await createRecoveryQuestIfNeeded(user, shieldResolution.missedDays);
+    const daysSinceLastActivity = computeDaysSinceLastActivity(user?.streaks?.lastActivity, now);
+    const recoveryQuest = await createRecoveryQuestIfNeeded(
+      user,
+      daysSinceLastActivity > 1 ? daysSinceLastActivity - 1 : 0
+    );
     await user.save();
 
     // Get quest statistics
@@ -562,6 +585,10 @@ export const getDashboardData = async (req, res) => {
           dualClassUnlockStreak: user?.onboarding?.dualClassUnlockStreak || 60,
           shieldCharges: user?.streaks?.shieldCharges ?? 1,
           shieldLastUsedAt: user?.streaks?.shieldLastUsedAt || null,
+          shieldedDates: user?.streaks?.shieldedDates || [],
+          shieldAutoUse: user?.preferences?.shieldAutoUse !== false,
+          canUseShieldNow,
+          missingShieldDates,
           recoveryQuestCreated: Boolean(recoveryQuest),
         },
         recentActivity,

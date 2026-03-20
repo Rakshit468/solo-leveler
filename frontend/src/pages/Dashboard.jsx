@@ -9,19 +9,23 @@ import {
   TrendingUp,
   Calendar,
   Shield,
-  Lock
+  Lock,
+  ShieldCheck
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
-import { questAPI, statsAPI } from '../services/api'
+import { authAPI, questAPI, statsAPI } from '../services/api'
 import StatCard from '../components/StatCard'
 import QuestCard from '../components/QuestCard'
 import LoadingSpinner from '../components/LoadingSpinner'
+import toast from 'react-hot-toast'
 
 const Dashboard = () => {
-  const { user } = useAuth()
+  const { user, updateUser } = useAuth()
   const [dashboardData, setDashboardData] = useState(null)
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [shieldSaving, setShieldSaving] = useState(false)
+  const [selectedShieldDate, setSelectedShieldDate] = useState('')
 
   useEffect(() => {
     loadDashboardData()
@@ -36,6 +40,10 @@ const Dashboard = () => {
       
       setDashboardData(dashboardResponse.data.data)
       setStats(statsResponse.data.data)
+
+      const progression = dashboardResponse.data?.data?.progression || {}
+      const firstMissingDate = progression?.missingShieldDates?.[0] || ''
+      setSelectedShieldDate(firstMissingDate)
     } catch (error) {
       console.error('Error loading dashboard data:', error)
     } finally {
@@ -65,6 +73,52 @@ const Dashboard = () => {
     : 'Unassigned'
   const unlockStreak = progression.dualClassUnlockStreak || 60
   const currentStreak = user?.streaks?.current || 0
+  const shieldAutoUse = progression?.shieldAutoUse !== false
+
+  const handleShieldAutoToggle = async () => {
+    try {
+      setShieldSaving(true)
+      const nextValue = !shieldAutoUse
+      const nextPreferences = {
+        ...(user?.preferences || {}),
+        shieldAutoUse: nextValue,
+      }
+
+      const response = await authAPI.updateProfile({ preferences: nextPreferences })
+      if (response.data?.success) {
+        updateUser(response.data.data)
+        toast.success(nextValue ? 'Auto shield enabled' : 'Auto shield disabled')
+        await loadDashboardData()
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update shield setting')
+    } finally {
+      setShieldSaving(false)
+    }
+  }
+
+  const handleUseShieldNow = async () => {
+    if (!selectedShieldDate) {
+      toast.error('Select a missed date first')
+      return
+    }
+
+    try {
+      setShieldSaving(true)
+      const response = await authAPI.useShieldNow({ targetDate: selectedShieldDate })
+      if (response.data?.success) {
+        if (response.data?.data?.user) {
+          updateUser(response.data.data.user)
+        }
+        toast.success(response.data?.message || 'Shield used successfully')
+        await loadDashboardData()
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Could not use shield now')
+    } finally {
+      setShieldSaving(false)
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -175,6 +229,64 @@ const Dashboard = () => {
               {currentStreak} / {unlockStreak} streak days completed
             </p>
           )}
+
+          <div className="mt-4 border-t border-dark-700 pt-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm text-white">Auto-use Shield</p>
+                <p className="text-xs text-gray-400">Automatically spend shield on a one-day miss</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleShieldAutoToggle}
+                disabled={shieldSaving}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                  shieldAutoUse ? 'bg-primary-500' : 'bg-dark-600'
+                }`}
+                aria-label="Toggle shield auto use"
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                    shieldAutoUse ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {!shieldAutoUse && progression?.canUseShieldNow && progression?.shieldCharges > 0 && (
+              <div className="rounded-lg border border-secondary-700/60 bg-dark-900/60 p-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-secondary-200">Choose any missed date to apply your shield.</p>
+                  <p className="text-xs text-gray-400">
+                    No expiry window. Shield will be consumed for the selected date.
+                  </p>
+                  <select
+                    className="input mt-2"
+                    value={selectedShieldDate}
+                    onChange={(event) => setSelectedShieldDate(event.target.value)}
+                    disabled={shieldSaving}
+                  >
+                    {(progression?.missingShieldDates || []).map((dateKey) => (
+                      <option key={dateKey} value={dateKey}>
+                        {dateKey}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleUseShieldNow}
+                  disabled={shieldSaving}
+                  className="btn-secondary whitespace-nowrap"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4" />
+                    Use Shield
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

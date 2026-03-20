@@ -15,7 +15,10 @@ const CreateQuestModal = ({ onClose, onQuestCreate }) => {
     startTime: '',
     endTime: '',
     priority: 'medium',
-    tags: ''
+    tags: '',
+    estimatedMinutes: 25,
+    effort: 'medium',
+    focusModeEnabled: true,
   })
   const [loading, setLoading] = useState(false)
 
@@ -196,6 +199,42 @@ const CreateQuestModal = ({ onClose, onQuestCreate }) => {
               </select>
             </div>
           </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Estimated Minutes
+              </label>
+              <input
+                type="number"
+                name="estimatedMinutes"
+                min="5"
+                max="480"
+                className="input"
+                value={formData.estimatedMinutes}
+                onChange={handleChange}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Effort
+              </label>
+              <select name="effort" className="input" value={formData.effort} onChange={handleChange}>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm text-gray-300">
+            <input
+              type="checkbox"
+              checked={formData.focusModeEnabled}
+              onChange={(e) => setFormData((prev) => ({ ...prev, focusModeEnabled: e.target.checked }))}
+            />
+            Enable focus mode for this quest
+          </label>
 
           {/* Due Date */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

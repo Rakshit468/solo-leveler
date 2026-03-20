@@ -636,6 +636,10 @@ export const useShieldNow = async (req, res) => {
       streakAfterUse: user?.streaks?.current || 0,
       targetDate,
     });
+    await trackUserEvent(user._id, 'shield_used_date_selected', {
+      at: now,
+      targetDate,
+    });
 
     const missingDateKeysAfterUse = getRecentMissingDateKeys(activeDateSet, now, 365);
 

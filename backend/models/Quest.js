@@ -71,6 +71,34 @@ const questSchema = new mongoose.Schema({
     enum: ['low', 'medium', 'high', 'critical'],
     default: 'medium'
   },
+  estimatedMinutes: {
+    type: Number,
+    min: 5,
+    max: 480,
+    default: 25,
+  },
+  effort: {
+    type: String,
+    enum: ['low', 'medium', 'high'],
+    default: 'medium',
+  },
+  focusModeEnabled: {
+    type: Boolean,
+    default: false,
+  },
+  lastFocusedAt: Date,
+  snoozeUntil: Date,
+  focusSession: {
+    status: {
+      type: String,
+      enum: ['idle', 'running', 'cancelled', 'completed'],
+      default: 'idle',
+    },
+    startedAt: Date,
+    endedAt: Date,
+    presetMinutes: Number,
+    durationMinutes: Number,
+  },
   recurrence: {
     enabled: { type: Boolean, default: false },
     pattern: {

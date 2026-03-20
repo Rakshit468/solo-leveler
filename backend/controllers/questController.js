@@ -57,6 +57,31 @@ const parseDate = (value) => {
   return Number.isNaN(parsed.getTime()) ? undefined : parsed;
 };
 
+const getQuestCompareDate = (quest) => {
+  if (quest?.snoozeUntil) {
+    return new Date(quest.snoozeUntil);
+  }
+  return quest?.startDateTime ? new Date(quest.startDateTime) : quest?.dueDate ? new Date(quest.dueDate) : null;
+};
+
+const trackQuestEvent = async (userId, eventName, metadata = {}) => {
+  try {
+    await UserEvent.create({
+      user: userId,
+      eventName,
+      metadata,
+    });
+  } catch (error) {
+    console.error(`Track quest event failed: ${eventName}`, error.message);
+  }
+};
+
+const getFocusXpForDuration = (durationMinutes) => {
+  if (durationMinutes <= 20) return 5;
+  if (durationMinutes <= 40) return 10;
+  return 15;
+};
+
 const getCompletedQuestDateKeys = async (userId, now = new Date()) => {
   const completed = await Quest.find({
     user: userId,
@@ -216,6 +241,10 @@ export const createQuest = async (req, res) => {
       recurrence,
       tags,
       priority,
+      estimatedMinutes,
+      effort,
+      focusModeEnabled,
+      snoozeUntil,
     } = req.body;
 
     const quest = new Quest({
@@ -235,6 +264,10 @@ export const createQuest = async (req, res) => {
       recurrence,
       priority,
       tags: tags || [],
+      estimatedMinutes,
+      effort,
+      focusModeEnabled,
+      snoozeUntil: parseDate(snoozeUntil),
     });
 
     // Calculate XP using the model method
@@ -297,7 +330,16 @@ export const updateQuest = async (req, res) => {
       timezone,
       priority,
       tags,
+      estimatedMinutes,
+      effort,
+      focusModeEnabled,
+      snoozeUntil,
     } = req.body;
+
+    const wasOverdue = (() => {
+      const previousCompareDate = getQuestCompareDate(quest);
+      return previousCompareDate && previousCompareDate < new Date() && quest.status !== "completed";
+    })();
 
     if (title !== undefined) quest.title = title;
     if (description !== undefined) quest.description = description;
@@ -313,8 +355,26 @@ export const updateQuest = async (req, res) => {
     if (timezone !== undefined) quest.timezone = timezone || "UTC";
     if (priority !== undefined) quest.priority = priority;
     if (tags !== undefined) quest.tags = tags;
+    if (estimatedMinutes !== undefined) quest.estimatedMinutes = estimatedMinutes;
+    if (effort !== undefined) quest.effort = effort;
+    if (focusModeEnabled !== undefined) quest.focusModeEnabled = Boolean(focusModeEnabled);
+    if (snoozeUntil !== undefined) quest.snoozeUntil = parseDate(snoozeUntil);
 
     await quest.save();
+
+    const isOverdueAfterUpdate = (() => {
+      const nextCompareDate = getQuestCompareDate(quest);
+      return nextCompareDate && nextCompareDate < new Date() && quest.status !== "completed";
+    })();
+
+    if (wasOverdue && !isOverdueAfterUpdate) {
+      await trackQuestEvent(req.user.id, "overdue_rescheduled", {
+        questId: quest._id,
+        dueDate: quest.dueDate,
+        startDateTime: quest.startDateTime,
+        snoozeUntil: quest.snoozeUntil,
+      });
+    }
 
     const user = await User.findById(req.user.id);
     if (user?.integrations?.googleCalendar?.connected) {
@@ -435,6 +495,13 @@ export const completeQuest = async (req, res) => {
 
     await user.save();
 
+    if (quest.isRecoveryQuest) {
+      await trackQuestEvent(user._id, "recovery_quest_completed", {
+        questId: quest._id,
+        xpGained: quest.xpReward,
+      });
+    }
+
     // Update skill progress for skills in the same category as the quest
     const userSkills = await UserSkill.find({ user: user._id }).populate("skill");
     const relatedSkills = userSkills.filter((us) => us.skill.category === quest.category);
@@ -493,6 +560,213 @@ export const completeQuest = async (req, res) => {
   } catch (error) {
     console.error("Complete quest error:", error);
     res.status(500).json({ message: "Server error completing quest" });
+  }
+};
+
+export const startFocusSession = async (req, res) => {
+  try {
+    const quest = await Quest.findOne({ _id: req.params.id, user: req.user.id });
+    if (!quest) {
+      return res.status(404).json({ message: "Quest not found" });
+    }
+
+    if (quest.status === "completed") {
+      return res.status(400).json({ message: "Cannot focus on completed quest" });
+    }
+
+    const presetMinutes = Math.max(5, Math.min(120, Number(req.body?.presetMinutes || quest.estimatedMinutes || 25)));
+
+    quest.focusModeEnabled = true;
+    quest.lastFocusedAt = new Date();
+    quest.focusSession = {
+      status: "running",
+      startedAt: new Date(),
+      endedAt: null,
+      presetMinutes,
+      durationMinutes: null,
+    };
+    await quest.save();
+
+    await trackQuestEvent(req.user.id, "focus_started", {
+      questId: quest._id,
+      presetMinutes,
+    });
+
+    res.json({
+      success: true,
+      message: "Focus session started",
+      data: {
+        quest,
+      },
+    });
+  } catch (error) {
+    console.error("Start focus session error:", error);
+    res.status(500).json({ message: "Server error starting focus session" });
+  }
+};
+
+export const completeFocusSession = async (req, res) => {
+  try {
+    const quest = await Quest.findOne({ _id: req.params.id, user: req.user.id });
+    if (!quest) {
+      return res.status(404).json({ message: "Quest not found" });
+    }
+
+    if (quest.status === "completed") {
+      return res.status(400).json({ message: "Quest already completed" });
+    }
+
+    const startedAt = quest?.focusSession?.startedAt ? new Date(quest.focusSession.startedAt) : new Date();
+    const now = new Date();
+    const elapsedFromStart = Math.max(1, Math.round((now.getTime() - startedAt.getTime()) / 60000));
+    const durationMinutes = Math.max(1, Math.min(180, Number(req.body?.durationMinutes || elapsedFromStart)));
+    const focusXP = getFocusXpForDuration(durationMinutes);
+
+    quest.focusModeEnabled = true;
+    quest.lastFocusedAt = now;
+    quest.focusSession = {
+      status: "completed",
+      startedAt,
+      endedAt: now,
+      presetMinutes: Number(req.body?.presetMinutes || quest?.focusSession?.presetMinutes || quest.estimatedMinutes || 25),
+      durationMinutes,
+    };
+
+    await quest.save();
+
+    const user = await User.findById(req.user.id);
+    const { leveledUp, newLevel, newXP, newXPToNextLevel } = await user.addXP(
+      focusXP,
+      "focus",
+      quest._id,
+      `Completed focus session: ${quest.title}`,
+      { durationMinutes }
+    );
+
+    await user.save();
+
+    await trackQuestEvent(req.user.id, "focus_completed", {
+      questId: quest._id,
+      durationMinutes,
+      xpGained: focusXP,
+    });
+
+    res.json({
+      success: true,
+      message: "Focus session completed",
+      data: {
+        quest,
+        xpGained: focusXP,
+        leveledUp,
+        newLevel,
+        newXP,
+        newXPToNextLevel,
+      },
+    });
+  } catch (error) {
+    console.error("Complete focus session error:", error);
+    res.status(500).json({ message: "Server error completing focus session" });
+  }
+};
+
+export const cancelFocusSession = async (req, res) => {
+  try {
+    const quest = await Quest.findOne({ _id: req.params.id, user: req.user.id });
+    if (!quest) {
+      return res.status(404).json({ message: "Quest not found" });
+    }
+
+    const now = new Date();
+    const startedAt = quest?.focusSession?.startedAt || null;
+    const elapsedMinutes = startedAt
+      ? Math.max(1, Math.round((now.getTime() - new Date(startedAt).getTime()) / 60000))
+      : null;
+
+    quest.focusSession = {
+      status: "cancelled",
+      startedAt,
+      endedAt: now,
+      presetMinutes: quest?.focusSession?.presetMinutes || quest.estimatedMinutes || 25,
+      durationMinutes: elapsedMinutes,
+    };
+    await quest.save();
+
+    await trackQuestEvent(req.user.id, "focus_cancelled", {
+      questId: quest._id,
+      elapsedMinutes,
+    });
+
+    res.json({
+      success: true,
+      message: "Focus session cancelled",
+      data: { quest },
+    });
+  } catch (error) {
+    console.error("Cancel focus session error:", error);
+    res.status(500).json({ message: "Server error cancelling focus session" });
+  }
+};
+
+export const getOverdueSuggestions = async (req, res) => {
+  try {
+    const now = new Date();
+    const overdueQuests = await Quest.find({
+      user: req.user.id,
+      status: "active",
+      $or: [
+        { snoozeUntil: { $lt: now } },
+        { snoozeUntil: null, startDateTime: { $lt: now } },
+        { snoozeUntil: null, startDateTime: null, dueDate: { $lt: now } },
+      ],
+    }).sort({ dueDate: 1, startDateTime: 1 });
+
+    const suggestions = overdueQuests.map((quest) => {
+      const todayEvening = new Date(now);
+      todayEvening.setHours(19, 0, 0, 0);
+
+      const tomorrowMorning = new Date(now);
+      tomorrowMorning.setDate(tomorrowMorning.getDate() + 1);
+      tomorrowMorning.setHours(9, 0, 0, 0);
+
+      return {
+        questId: quest._id,
+        questTitle: quest.title,
+        effort: quest.effort || "medium",
+        estimatedMinutes: quest.estimatedMinutes || 25,
+        options: [
+          {
+            id: "move_today_evening",
+            label: "Move to today evening",
+            patch: { startDateTime: todayEvening.toISOString(), snoozeUntil: todayEvening.toISOString() },
+          },
+          {
+            id: "move_tomorrow_morning",
+            label: "Move to tomorrow morning",
+            patch: { startDateTime: tomorrowMorning.toISOString(), snoozeUntil: tomorrowMorning.toISOString() },
+          },
+          {
+            id: "downgrade_subtask",
+            label: "Downgrade to smaller sub-task",
+            patch: {
+              difficulty: "easy",
+              effort: "low",
+              estimatedMinutes: Math.max(10, Math.round((quest.estimatedMinutes || 25) / 2)),
+            },
+          },
+        ],
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        count: suggestions.length,
+        suggestions,
+      },
+    });
+  } catch (error) {
+    console.error("Get overdue suggestions error:", error);
+    res.status(500).json({ message: "Server error fetching overdue suggestions" });
   }
 };
 

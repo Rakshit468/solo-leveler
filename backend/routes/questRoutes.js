@@ -6,7 +6,11 @@ import {
   updateQuest, 
   completeQuest, 
   deleteQuest,
+  getOverdueSuggestions,
   getDashboardData,
+  startFocusSession,
+  completeFocusSession,
+  cancelFocusSession,
   getGoogleCalendarAuthUrl,
   googleCalendarCallback,
   getGoogleCalendarStatus,
@@ -33,6 +37,7 @@ router.post('/:id/google-calendar/sync', syncQuestToGoogleCalendar);
 // Quest CRUD routes
 router.get('/', getQuests);
 router.get('/dashboard', getDashboardData);
+router.get('/overdue/suggestions', getOverdueSuggestions);
 
 router.post('/', [
   body('title')
@@ -52,6 +57,9 @@ router.post('/', [
 ], createQuest);
 
 router.put('/:id', updateQuest);
+router.post('/:id/focus/start', startFocusSession);
+router.post('/:id/focus/complete', completeFocusSession);
+router.post('/:id/focus/cancel', cancelFocusSession);
 router.post('/:id/complete', completeQuest);
 router.delete('/:id', deleteQuest);
 

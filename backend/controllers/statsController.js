@@ -328,3 +328,73 @@ export const getAnalytics = async (req, res) => {
     res.status(500).json({ message: "Server error fetching analytics" });
   }
 };
+
+export const getStreakTimeline = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const days = Math.min(90, Math.max(7, parseInt(req.query.days || '30', 10)));
+    const user = await User.findById(userId).select('streaks.shieldedDates');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
+    startDate.setDate(startDate.getDate() - (days - 1));
+
+    const questCounts = await Quest.aggregate([
+      {
+        $match: {
+          user: new mongoose.Types.ObjectId(userId),
+          status: 'completed',
+          completedAt: { $gte: startDate },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$completedAt' },
+            month: { $month: '$completedAt' },
+            day: { $dayOfMonth: '$completedAt' },
+          },
+          completedCount: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const completedByDate = new Map();
+    questCounts.forEach((entry) => {
+      const key = `${entry._id.year}-${String(entry._id.month).padStart(2, '0')}-${String(entry._id.day).padStart(2, '0')}`;
+      completedByDate.set(key, entry.completedCount);
+    });
+
+    const shieldedSet = new Set(user?.streaks?.shieldedDates || []);
+    const timeline = [];
+
+    for (let i = 0; i < days; i += 1) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      const key = date.toISOString().slice(0, 10);
+      const completedCount = completedByDate.get(key) || 0;
+      const isShielded = shieldedSet.has(key);
+
+      timeline.push({
+        date: key,
+        state: completedCount > 0 ? 'active' : isShielded ? 'shielded' : 'missed',
+        completedCount,
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        days,
+        timeline,
+      },
+    });
+  } catch (error) {
+    console.error('Get streak timeline error:', error);
+    res.status(500).json({ message: 'Server error fetching streak timeline' });
+  }
+};

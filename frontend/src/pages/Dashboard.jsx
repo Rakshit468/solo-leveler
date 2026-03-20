@@ -24,6 +24,7 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null)
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [streakTimeline, setStreakTimeline] = useState([])
   const [shieldSaving, setShieldSaving] = useState(false)
   const [selectedShieldDate, setSelectedShieldDate] = useState('')
 
@@ -44,6 +45,9 @@ const Dashboard = () => {
       const progression = dashboardResponse.data?.data?.progression || {}
       const firstMissingDate = progression?.missingShieldDates?.[0] || ''
       setSelectedShieldDate(firstMissingDate)
+
+      const timelineResponse = await statsAPI.getStreakTimeline({ days: 30 })
+      setStreakTimeline(timelineResponse.data?.data?.timeline || [])
     } catch (error) {
       console.error('Error loading dashboard data:', error)
     } finally {
@@ -60,6 +64,34 @@ const Dashboard = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <LoadingSpinner size="lg" />
+      </div>
+
+      <div className="card">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-white">Streak Timeline (30 days)</h3>
+          <div className="flex items-center gap-3 text-xs text-gray-400">
+            <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-success-500" />Active</span>
+            <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-primary-500" />Shielded</span>
+            <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-gray-600" />Missed</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-10 gap-1 sm:grid-cols-15 lg:grid-cols-30">
+          {streakTimeline.map((entry) => {
+            const color =
+              entry.state === 'active'
+                ? 'bg-success-500'
+                : entry.state === 'shielded'
+                ? 'bg-primary-500'
+                : 'bg-gray-600'
+            return (
+              <div
+                key={entry.date}
+                title={`${entry.date} - ${entry.state} (${entry.completedCount} completed)`}
+                className={`h-6 rounded ${color}`}
+              />
+            )
+          })}
+        </div>
       </div>
     )
   }

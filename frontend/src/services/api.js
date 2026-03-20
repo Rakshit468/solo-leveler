@@ -43,8 +43,12 @@ export const questAPI = {
   createQuest: (questData) => api.post("/quests", questData),
   updateQuest: (id, questData) => api.put(`/quests/${id}`, questData),
   completeQuest: (id) => api.post(`/quests/${id}/complete`),
+  startFocusSession: (id, payload = {}) => api.post(`/quests/${id}/focus/start`, payload),
+  completeFocusSession: (id, payload = {}) => api.post(`/quests/${id}/focus/complete`, payload),
+  cancelFocusSession: (id) => api.post(`/quests/${id}/focus/cancel`),
   deleteQuest: (id) => api.delete(`/quests/${id}`),
   getDashboardData: () => api.get("/quests/dashboard"),
+  getOverdueSuggestions: () => api.get("/quests/overdue/suggestions"),
   getGoogleCalendarAuthUrl: () => api.get("/quests/google-calendar/auth-url"),
   getGoogleCalendarStatus: () => api.get("/quests/google-calendar/status"),
   disconnectGoogleCalendar: () => api.delete("/quests/google-calendar/disconnect"),
@@ -58,6 +62,7 @@ export const statsAPI = {
   getLeaderboard: (params = {}) => api.get("/stats/leaderboard", { params }),
   addXP: (xpData) => api.post("/stats/xp", xpData),
   getAnalytics: (params = {}) => api.get("/stats/analytics", { params }),
+  getStreakTimeline: (params = {}) => api.get("/stats/streak-timeline", { params }),
 };
 
 // Skills API

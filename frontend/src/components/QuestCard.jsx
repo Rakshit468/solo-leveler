@@ -1,11 +1,12 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Check, Clock, Star, Target } from "lucide-react";
+import { Check, Clock, Flame, Star, Target, Timer } from "lucide-react";
 import { questAPI } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import { useNotifications } from "../contexts/NotificationContext";
 import toast from "react-hot-toast";
 import clsx from "clsx";
+import FocusSessionModal from "./FocusSessionModal";
 
 const difficultyColors = {
   easy: "text-green-400 bg-green-400/20",
@@ -25,6 +26,7 @@ const QuestCard = ({ quest, onQuestComplete }) => {
   const { user, updateUser } = useAuth();
   const { addNotification } = useNotifications();
   const [loading, setLoading] = React.useState(false);
+  const [focusOpen, setFocusOpen] = React.useState(false);
 
   const Icon = typeIcons[quest.type];
 
@@ -98,17 +100,18 @@ const QuestCard = ({ quest, onQuestComplete }) => {
     compareDate && new Date(compareDate) < new Date() && !isCompleted;
 
   return (
-    <motion.div
-      className={clsx(
-        "card hover-lift",
-        isCompleted && "opacity-75 bg-success-500/10",
-        isOverdue && "border-error-500/50"
-      )}
-      whileHover={{ scale: 1.02 }}
-      layout
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
+    <>
+      <motion.div
+        className={clsx(
+          "card hover-lift",
+          isCompleted && "opacity-75 bg-success-500/10",
+          isOverdue && "border-error-500/50"
+        )}
+        whileHover={{ scale: 1.02 }}
+        layout
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
           <div className="flex items-center space-x-2 mb-2">
             <Icon className="h-4 w-4 text-gray-400" />
             <span
@@ -122,6 +125,11 @@ const QuestCard = ({ quest, onQuestComplete }) => {
             <span className="px-2 py-1 rounded-full text-xs font-medium bg-dark-700 text-gray-300">
               {quest.type}
             </span>
+            {quest.isRecoveryQuest && (
+              <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary-500/20 text-secondary-300">
+                Recovery +bonus XP
+              </span>
+            )}
           </div>
 
           <h3
@@ -136,6 +144,17 @@ const QuestCard = ({ quest, onQuestComplete }) => {
           {quest.description && (
             <p className="text-gray-400 text-sm mb-3">{quest.description}</p>
           )}
+
+          <div className="mb-3 flex items-center gap-2 text-xs text-gray-300">
+            <span className="inline-flex items-center gap-1 rounded-md bg-dark-700 px-2 py-1">
+              <Flame className="h-3.5 w-3.5 text-orange-400" />
+              Effort: {quest.effort || "medium"}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-md bg-dark-700 px-2 py-1">
+              <Timer className="h-3.5 w-3.5 text-primary-400" />
+              {quest.estimatedMinutes || 25} min
+            </span>
+          </div>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -169,20 +188,29 @@ const QuestCard = ({ quest, onQuestComplete }) => {
             </div>
 
             {!isCompleted && (
-              <button
-                onClick={handleComplete}
-                disabled={loading}
-                className="btn-success text-sm"
-              >
-                {loading ? (
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                ) : (
-                  <>
-                    <Check className="h-4 w-4 mr-1" />
-                    Complete
-                  </>
-                )}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFocusOpen(true)}
+                  className="btn-secondary text-sm"
+                >
+                  Start Focus
+                </button>
+                <button
+                  onClick={handleComplete}
+                  disabled={loading}
+                  className="btn-success text-sm"
+                >
+                  {loading ? (
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4 mr-1" />
+                      Complete
+                    </>
+                  )}
+                </button>
+              </div>
             )}
 
             {isCompleted && (
@@ -192,9 +220,27 @@ const QuestCard = ({ quest, onQuestComplete }) => {
               </div>
             )}
           </div>
+          </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+
+      {focusOpen && !isCompleted && (
+        <FocusSessionModal
+          quest={quest}
+          onClose={() => setFocusOpen(false)}
+          onSessionComplete={(data) => {
+            updateUser({
+              character: {
+                ...user?.character,
+                xp: data?.newXP ?? user?.character?.xp,
+                level: data?.newLevel ?? user?.character?.level,
+                xpToNextLevel: data?.newXPToNextLevel ?? user?.character?.xpToNextLevel,
+              },
+            });
+          }}
+        />
+      )}
+    </>
   );
 };
 

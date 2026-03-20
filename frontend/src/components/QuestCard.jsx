@@ -37,6 +37,7 @@ const QuestCard = ({ quest, onQuestComplete }) => {
   const { addNotification } = useNotifications();
   const [loading, setLoading] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
   const [focusOpen, setFocusOpen] = React.useState(false);
   const [rescheduleOpen, setRescheduleOpen] = React.useState(false);
   const [rescheduleSaving, setRescheduleSaving] = React.useState(false);
@@ -151,12 +152,6 @@ const QuestCard = ({ quest, onQuestComplete }) => {
   };
 
   const handleDelete = async () => {
-    const confirmed = window.confirm(
-      `Delete quest "${quest.title}"? This action cannot be undone.`
-    );
-    if (!confirmed) {
-      return;
-    }
 
     try {
       setDeleting(true);
@@ -171,6 +166,7 @@ const QuestCard = ({ quest, onQuestComplete }) => {
 
       toast.success("Quest deleted");
       onQuestComplete?.(quest._id);
+      setDeleteConfirmOpen(false);
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to delete quest");
     } finally {
@@ -340,7 +336,7 @@ const QuestCard = ({ quest, onQuestComplete }) => {
 
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={() => setDeleteConfirmOpen(true)}
             disabled={deleting || loading || rescheduleSaving}
             className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-error-500/10 hover:text-error-300 disabled:cursor-not-allowed disabled:opacity-50"
             title="Delete quest"
@@ -366,6 +362,36 @@ const QuestCard = ({ quest, onQuestComplete }) => {
             });
           }}
         />
+      )}
+
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-sm rounded-xl border border-dark-700 bg-dark-800 p-5 shadow-2xl">
+            <h3 className="text-lg font-semibold text-white">Delete Quest?</h3>
+            <p className="mt-2 text-sm text-gray-300">
+              This will permanently delete
+              <span className="font-medium text-white"> {quest.title}</span>.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                className="btn btn-outline flex-1"
+                onClick={() => setDeleteConfirmOpen(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-danger flex-1"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

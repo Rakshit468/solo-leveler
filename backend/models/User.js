@@ -33,7 +33,7 @@ const userSchema = new mongoose.Schema(
       },
       avatar: {
         type: String,
-        default: "default-avatar.png",
+        default: "shadow-monarch-avatar.svg",
       },
       level: {
         type: Number,

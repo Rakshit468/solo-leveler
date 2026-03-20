@@ -128,7 +128,7 @@ export const register = async (req, res) => {
         isEmailVerified: false,
         character: {
           name: characterName || username,
-          avatar: 'default-avatar.png',
+          avatar: 'shadow-monarch-avatar.svg',
           level: 1,
           xp: 0,
           xpToNextLevel: 100,

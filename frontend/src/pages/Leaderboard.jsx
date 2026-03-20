@@ -38,7 +38,7 @@ const Leaderboard = () => {
               entry.username ||
               userPart.username ||
               "Unknown Hunter",
-            avatar: characterPart.avatar || "default-avatar.png",
+            avatar: characterPart.avatar || "shadow-monarch-avatar.svg",
             level: characterPart.level || entry.level || 0,
             xp: characterPart.xp || entry.score || 0,
             gold: characterPart.gold ?? 0,

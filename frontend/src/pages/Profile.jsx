@@ -5,16 +5,16 @@ import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
 
 const avatarOptions = [
-  "default-avatar.png",
-  "warrior-avatar.svg",
-  "mage-avatar.svg",
-  "rogue-avatar.svg",
-  "paladin-avatar.svg",
-  "archer-avatar.svg",
-  "healer-avatar.svg",
-  "knight-avatar.svg",
-  "ninja-avatar.svg",
-  "samurai-avatar.svg",
+  "shadow-monarch-avatar.svg",
+  "blade-hunter-avatar.svg",
+  "arcane-hunter-avatar.svg",
+  "guardian-hunter-avatar.svg",
+  "crimson-hunter-avatar.svg",
+  "frost-hunter-avatar.svg",
+  "void-hunter-avatar.svg",
+  "radiant-hunter-avatar.svg",
+  "storm-hunter-avatar.svg",
+  "beast-hunter-avatar.svg",
 ];
 
 const Profile = () => {
@@ -23,7 +23,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     characterName: user?.character?.name || "",
-    avatar: user?.character?.avatar || "default-avatar.png",
+    avatar: user?.character?.avatar || "shadow-monarch-avatar.svg",
   });
 
   const handleChange = (e) => {
@@ -57,7 +57,7 @@ const Profile = () => {
   const handleCancel = () => {
     setFormData({
       characterName: user?.character?.name || "",
-      avatar: user?.character?.avatar || "default-avatar.png",
+      avatar: user?.character?.avatar || "shadow-monarch-avatar.svg",
     });
     setEditing(false);
   };
@@ -82,7 +82,7 @@ const Profile = () => {
             <div className="relative mb-6">
               <div className="mx-auto h-28 w-28 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center overflow-hidden sm:h-32 sm:w-32">
                 <img
-                  src={`/avatars/${user?.character?.avatar || "default-avatar.png"
+                  src={`/avatars/${user?.character?.avatar || "shadow-monarch-avatar.svg"
                     }`}
                   alt="avatar"
                   className="w-full h-full object-cover"

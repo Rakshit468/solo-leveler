@@ -232,7 +232,7 @@ const seedData = async () => {
       password: 'password123',
       character: {
         name: 'Solo Leveler',
-        avatar: 'default-avatar.png',
+        avatar: 'shadow-monarch-avatar.svg',
         level: 5,
         xp: 250,
         xpToNextLevel: 400,

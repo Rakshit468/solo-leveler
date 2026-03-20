@@ -32,7 +32,7 @@ const Header = () => {
               <div className="hidden items-center space-x-2 sm:flex">
                 <img
                   src={`/avatars/${
-                    user.character?.avatar || "default-avatar.png"
+                    user.character?.avatar || "shadow-monarch-avatar.svg"
                   }`}
                   alt="avatar"
                   className="w-10 h-10 rounded-full border-2 border-primary-500 bg-dark-700 object-cover"

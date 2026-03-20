@@ -66,6 +66,7 @@ const getQuestCompareDate = (quest) => {
 };
 
 const trackQuestEvent = async (userId, eventName, metadata = {}) => {
+  // Deployment heartbeat: no-op comment to verify Railway auto-deploy pipeline.
   try {
     await UserEvent.create({
       user: userId,

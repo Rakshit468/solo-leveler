@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Check, Clock, Flame, Star, Target, Timer } from "lucide-react";
+import { AlertTriangle, CalendarClock, Check, Clock, Flame, Star, Target, Timer } from "lucide-react";
 import { questAPI } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import { useNotifications } from "../contexts/NotificationContext";
@@ -27,6 +27,17 @@ const QuestCard = ({ quest, onQuestComplete }) => {
   const { addNotification } = useNotifications();
   const [loading, setLoading] = React.useState(false);
   const [focusOpen, setFocusOpen] = React.useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = React.useState(false);
+  const [rescheduleSaving, setRescheduleSaving] = React.useState(false);
+  const [rescheduleAt, setRescheduleAt] = React.useState(() => {
+    const baseDate = quest?.startDateTime || quest?.dueDate || new Date();
+    const parsed = new Date(baseDate);
+    if (Number.isNaN(parsed.getTime())) {
+      return "";
+    }
+    const local = new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  });
 
   const Icon = typeIcons[quest.type];
 
@@ -95,9 +106,38 @@ const QuestCard = ({ quest, onQuestComplete }) => {
   };
 
   const isCompleted = quest.status === "completed";
-  const compareDate = quest.startDateTime || quest.dueDate;
+  const compareDate = quest.snoozeUntil || quest.startDateTime || quest.dueDate;
   const isOverdue =
     compareDate && new Date(compareDate) < new Date() && !isCompleted;
+
+  const handleReschedule = async () => {
+    if (!rescheduleAt) {
+      toast.error("Choose a date and time first");
+      return;
+    }
+
+    try {
+      setRescheduleSaving(true);
+      const nextDate = new Date(rescheduleAt);
+      if (Number.isNaN(nextDate.getTime())) {
+        toast.error("Invalid date/time selected");
+        return;
+      }
+
+      await questAPI.updateQuest(quest._id, {
+        startDateTime: nextDate.toISOString(),
+        snoozeUntil: nextDate.toISOString(),
+      });
+
+      toast.success("Quest rescheduled");
+      setRescheduleOpen(false);
+      onQuestComplete?.(quest._id);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to reschedule quest");
+    } finally {
+      setRescheduleSaving(false);
+    }
+  };
 
   return (
     <>
@@ -125,6 +165,12 @@ const QuestCard = ({ quest, onQuestComplete }) => {
             <span className="px-2 py-1 rounded-full text-xs font-medium bg-dark-700 text-gray-300">
               {quest.type}
             </span>
+            {isOverdue && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-error-500/20 px-2 py-1 text-xs font-medium text-error-300">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Overdue
+              </span>
+            )}
             {quest.isRecoveryQuest && (
               <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary-500/20 text-secondary-300">
                 Recovery +bonus XP
@@ -156,8 +202,8 @@ const QuestCard = ({ quest, onQuestComplete }) => {
             </span>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center space-x-1">
                 <Star className="h-4 w-4 text-accent-500" />
                 <span className="text-sm font-medium text-accent-500">
@@ -188,7 +234,15 @@ const QuestCard = ({ quest, onQuestComplete }) => {
             </div>
 
             {!isCompleted && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRescheduleOpen((prev) => !prev)}
+                  className="btn text-sm inline-flex items-center gap-1"
+                >
+                  <CalendarClock className="h-4 w-4" />
+                  Reschedule
+                </button>
                 <button
                   type="button"
                   onClick={() => setFocusOpen(true)}
@@ -220,6 +274,29 @@ const QuestCard = ({ quest, onQuestComplete }) => {
               </div>
             )}
           </div>
+
+          {rescheduleOpen && !isCompleted && (
+            <div className="mt-3 rounded-lg border border-dark-700 bg-dark-900/60 p-3">
+              <p className="mb-2 text-xs text-gray-400">Pick a new date and time</p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <input
+                  type="datetime-local"
+                  className="input"
+                  value={rescheduleAt}
+                  onChange={(event) => setRescheduleAt(event.target.value)}
+                  disabled={rescheduleSaving}
+                />
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleReschedule}
+                  disabled={rescheduleSaving}
+                >
+                  {rescheduleSaving ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+          )}
           </div>
         </div>
       </motion.div>

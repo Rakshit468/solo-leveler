@@ -183,17 +183,34 @@ const createRecoveryQuestIfNeeded = async (user, missedDays) => {
 export const getQuests = async (req, res) => {
   try {
     const { search, type, status, category, page = 1, limit = 20 } = req.query;
+    const now = new Date();
 
     const filter = { user: req.user.id };
     if (type) filter.type = type;
-    if (status) filter.status = status;
+    if (status === "overdue") {
+      filter.status = "active";
+      filter.$or = [
+        { snoozeUntil: { $lt: now } },
+        { snoozeUntil: null, startDateTime: { $lt: now } },
+        { snoozeUntil: null, startDateTime: null, dueDate: { $lt: now } },
+      ];
+    } else if (status) {
+      filter.status = status;
+    }
     if (category) filter.category = category;
 
     if (search) {
-      filter.$or = [
+      const searchQuery = [
         { title: { $regex: search, $options: "i" } },
         { description: { $regex: search, $options: "i" } },
       ];
+
+      if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, { $or: searchQuery }];
+        delete filter.$or;
+      } else {
+        filter.$or = searchQuery;
+      }
     }
 
     const quests = await Quest.find(filter)

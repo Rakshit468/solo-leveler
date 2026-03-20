@@ -14,8 +14,6 @@ const Quests = () => {
   const [quests, setQuests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [overdueSuggestions, setOverdueSuggestions] = useState([]);
-  const [applyingSuggestion, setApplyingSuggestion] = useState("");
   const [filters, setFilters] = useState({
     type: "all",
     status: "active",
@@ -58,38 +56,8 @@ const Quests = () => {
     [filters.type, filters.status, filters.category]
   ); // useCallback dependencies
 
-  const loadOverdueSuggestions = useCallback(async () => {
-    try {
-      const response = await questAPI.getOverdueSuggestions();
-      setOverdueSuggestions(response.data?.data?.suggestions || []);
-    } catch (error) {
-      console.error("Error loading overdue suggestions:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadOverdueSuggestions();
-  }, [loadOverdueSuggestions]);
-
-  const applySuggestion = async (questId, option) => {
-    try {
-      setApplyingSuggestion(`${questId}:${option.id}`);
-      await questAPI.updateQuest(questId, option.patch);
-      toast.success(`Applied: ${option.label}`);
-      await Promise.all([loadQuests(debouncedSearch), loadOverdueSuggestions()]);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Could not apply suggestion");
-    } finally {
-      setApplyingSuggestion("");
-    }
-  };
-
-  const handleQuestComplete = (questId) => {
-    setQuests((prev) =>
-      prev.map((quest) =>
-        quest._id === questId ? { ...quest, status: "completed" } : quest
-      )
-    );
+  const handleQuestComplete = async () => {
+    await loadQuests(debouncedSearch);
   };
 
   const handleQuestCreate = (newQuest) => {
@@ -178,6 +146,7 @@ const Quests = () => {
           >
             <option value="all">All Status</option>
             <option value="active">Active</option>
+            <option value="overdue">Overdue</option>
             <option value="completed">Completed</option>
             <option value="paused">Paused</option>
           </select>
@@ -238,42 +207,8 @@ const Quests = () => {
         </div>
       </div>
 
-      {overdueSuggestions.length > 0 && (
-        <div className="card border-error-500/40">
-          <h3 className="mb-3 text-lg font-semibold text-white">Overdue Center</h3>
-          <div className="space-y-3">
-            {overdueSuggestions.map((item) => (
-              <div key={item.questId} className="rounded-lg border border-dark-700 bg-dark-900/60 p-3">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-white">{item.questTitle}</p>
-                  <span className="text-xs text-gray-400">
-                    {item.effort} effort • {item.estimatedMinutes} min
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {item.options.map((option) => {
-                    const key = `${item.questId}:${option.id}`;
-                    return (
-                      <button
-                        key={option.id}
-                        type="button"
-                        disabled={applyingSuggestion === key}
-                        onClick={() => applySuggestion(item.questId, option)}
-                        className="btn-secondary text-xs"
-                      >
-                        {applyingSuggestion === key ? "Applying..." : option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Quests List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {quests.length > 0 ? (
           quests.map((quest, index) => (
             <motion.div

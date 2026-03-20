@@ -1,6 +1,16 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, CalendarClock, Check, Clock, Flame, Star, Target, Timer } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarClock,
+  Check,
+  Clock,
+  Flame,
+  Star,
+  Target,
+  Timer,
+  Trash2,
+} from "lucide-react";
 import { questAPI } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import { useNotifications } from "../contexts/NotificationContext";
@@ -26,6 +36,7 @@ const QuestCard = ({ quest, onQuestComplete }) => {
   const { user, updateUser } = useAuth();
   const { addNotification } = useNotifications();
   const [loading, setLoading] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
   const [focusOpen, setFocusOpen] = React.useState(false);
   const [rescheduleOpen, setRescheduleOpen] = React.useState(false);
   const [rescheduleSaving, setRescheduleSaving] = React.useState(false);
@@ -139,6 +150,34 @@ const QuestCard = ({ quest, onQuestComplete }) => {
     }
   };
 
+  const handleDelete = async () => {
+    const confirmed = window.confirm(
+      `Delete quest "${quest.title}"? This action cannot be undone.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      await questAPI.deleteQuest(quest._id);
+
+      addNotification({
+        type: "warning",
+        title: "Quest deleted",
+        message: `${quest.title} was removed.`,
+        persistent: false,
+      });
+
+      toast.success("Quest deleted");
+      onQuestComplete?.(quest._id);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete quest");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <>
       <motion.div
@@ -150,7 +189,7 @@ const QuestCard = ({ quest, onQuestComplete }) => {
         whileHover={{ scale: 1.02 }}
         layout
       >
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-2">
           <div className="flex-1">
           <div className="flex items-center space-x-2 mb-2">
             <Icon className="h-4 w-4 text-gray-400" />
@@ -252,7 +291,7 @@ const QuestCard = ({ quest, onQuestComplete }) => {
                 </button>
                 <button
                   onClick={handleComplete}
-                  disabled={loading}
+                  disabled={loading || deleting}
                   className="btn-success text-sm h-10 w-full col-span-2"
                 >
                   {loading ? (
@@ -298,6 +337,17 @@ const QuestCard = ({ quest, onQuestComplete }) => {
             </div>
           )}
           </div>
+
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting || loading || rescheduleSaving}
+            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-error-500/10 hover:text-error-300 disabled:cursor-not-allowed disabled:opacity-50"
+            title="Delete quest"
+            aria-label={`Delete quest ${quest.title}`}
+          >
+            <Trash2 className={clsx("h-4 w-4", deleting && "animate-pulse")} />
+          </button>
         </div>
       </motion.div>
 

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Play, Timer } from "lucide-react";
+import { createPortal } from "react-dom";
 import { questAPI } from "../services/api";
 import toast from "react-hot-toast";
 import { useFocusTimer } from "../contexts/FocusTimerContext";
@@ -45,8 +46,8 @@ const FocusSessionModal = ({ quest, onClose, onSessionComplete }) => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+  const modalContent = (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
       <div className="w-full max-w-md rounded-xl border border-dark-700 bg-dark-800 p-5">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-white">Focus Mode</h3>
@@ -111,6 +112,8 @@ const FocusSessionModal = ({ quest, onClose, onSessionComplete }) => {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default FocusSessionModal;

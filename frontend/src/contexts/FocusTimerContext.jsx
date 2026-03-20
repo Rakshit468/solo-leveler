@@ -4,12 +4,18 @@ const STORAGE_KEY = "activeFocusTimer";
 
 const FocusTimerContext = createContext(null);
 
+const fallbackContext = {
+  focusState: { active: false },
+  startTimer: () => {},
+  pauseTimer: () => {},
+  resumeTimer: () => {},
+  clearTimer: () => {},
+  elapsedMinutes: 0,
+};
+
 export const useFocusTimer = () => {
   const context = useContext(FocusTimerContext);
-  if (!context) {
-    throw new Error("useFocusTimer must be used within a FocusTimerProvider");
-  }
-  return context;
+  return context || fallbackContext;
 };
 
 const getRemainingFromEndAt = (endAtMs) => Math.max(0, Math.ceil((endAtMs - Date.now()) / 1000));

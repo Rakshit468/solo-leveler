@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import Quest from "../models/Quest.js";
 import XPLog from "../models/XPLog.js";
 import LeaderboardEntry from "../models/Leaderboard.js";
+import { getEquippedTitle, syncHunterTitles } from "../services/hunterTitleService.js";
 
 const parseLimit = (value, fallback = 50) => {
   const parsed = Number.parseInt(value, 10);
@@ -111,7 +112,7 @@ export const getLeaderboard = async (req, res) => {
     if (type === "overall") {
       leaderboard = await User.find({ isActive: true })
         .select(
-          "username character.name character.avatar character.level character.xp character.totalStats character.gold streaks.current"
+          "username character.name character.avatar character.level character.xp character.totalStats character.gold streaks.current hunterTitles"
         )
         .sort({
           "character.level": -1,
@@ -125,6 +126,7 @@ export const getLeaderboard = async (req, res) => {
       leaderboard = leaderboard.map((user, index) => ({
         ...user.toObject(),
         score: getOverallScore(user.character, user.streaks),
+        equippedTitle: getEquippedTitle(user),
         rank: index + 1,
       }));
     } else if (type === "weekly" || type === "monthly") {
@@ -434,5 +436,52 @@ export const getStreakTimeline = async (req, res) => {
   } catch (error) {
     console.error('Get streak timeline error:', error);
     res.status(500).json({ message: 'Server error fetching streak timeline' });
+  }
+};
+
+export const getShareCard = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select(
+      "username character.name character.level character.avatar streaks.current onboarding.primaryClass hunterTitles"
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    await syncHunterTitles(user);
+    await user.save();
+
+    const weekStart = new Date();
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(weekStart.getDate() - 6);
+
+    const questsCompletedThisWeek = await Quest.countDocuments({
+      user: user._id,
+      status: "completed",
+      completedAt: { $gte: weekStart },
+    });
+
+    const equippedTitle = getEquippedTitle(user);
+    const hunterClass = user?.onboarding?.primaryClass
+      ? `${user.onboarding.primaryClass.charAt(0).toUpperCase()}${user.onboarding.primaryClass.slice(1)}`
+      : "Unassigned";
+
+    return res.json({
+      success: true,
+      data: {
+        username: user.username,
+        characterName: user?.character?.name || user.username,
+        avatar: user?.character?.avatar || "shadow-monarch-avatar.svg",
+        level: user?.character?.level || 1,
+        streak: user?.streaks?.current || 0,
+        questsCompletedThisWeek,
+        hunterClass,
+        title: equippedTitle?.name || "Rookie Hunter",
+      },
+    });
+  } catch (error) {
+    console.error("Get share card error:", error);
+    return res.status(500).json({ message: "Server error fetching share card" });
   }
 };

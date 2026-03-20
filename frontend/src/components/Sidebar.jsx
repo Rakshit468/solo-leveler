@@ -8,7 +8,8 @@ import {
   BarChart3, 
   User,
   Target,
-  CalendarDays
+  CalendarDays,
+  Users
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import clsx from 'clsx'
@@ -19,6 +20,7 @@ const navigation = [
   { name: 'Calendar', href: '/calendar', icon: CalendarDays },
   { name: 'Skills', href: '/skills', icon: Zap },
   { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
+  { name: 'Challenges', href: '/challenges', icon: Users },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Profile', href: '/profile', icon: User },
 ]

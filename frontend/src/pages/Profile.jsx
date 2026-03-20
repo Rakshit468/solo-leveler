@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Edit, Save, X, User, Mail, Crown, ShieldAlert } from "lucide-react";
+import { Edit, Save, X, User, Mail, Crown, ShieldAlert, BadgeCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { authAPI } from "../services/api";
 import toast from "react-hot-toast";
 
 const avatarOptions = [
@@ -25,7 +27,8 @@ const classOptions = [
 ];
 
 const Profile = () => {
-  const { user, updateProfile } = useAuth();
+  const navigate = useNavigate();
+  const { user, updateProfile, updateUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -73,6 +76,18 @@ const Profile = () => {
   };
 
   const missingPrimaryClass = !user?.onboarding?.primaryClass;
+
+  const handleEquipTitle = async (titleKey) => {
+    try {
+      const response = await authAPI.equipHunterTitle({ titleKey });
+      if (response.data?.success) {
+        updateUser(response.data.data);
+        toast.success("Hunter title equipped");
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not equip title");
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -415,6 +430,52 @@ const Profile = () => {
               </div>
             </div>
           )}
+
+          <div className="card">
+            <h3 className="text-xl font-semibold text-white mb-4">Hunter Titles</h3>
+            {user?.hunterTitles?.unlocked?.length > 0 ? (
+              <div className="space-y-3">
+                {user.hunterTitles.unlocked.map((title) => {
+                  const isEquipped = user?.hunterTitles?.equippedKey === title.key;
+                  return (
+                    <div
+                      key={title.key}
+                      className={`rounded-lg border p-4 flex flex-wrap items-center justify-between gap-3 ${
+                        isEquipped
+                          ? "border-primary-500 bg-primary-500/10"
+                          : "border-dark-700 bg-dark-700"
+                      }`}
+                    >
+                      <div>
+                        <p className="font-semibold text-white flex items-center gap-2">
+                          <BadgeCheck className="h-4 w-4 text-primary-300" />
+                          {title.name}
+                        </p>
+                        <p className="text-sm text-gray-400 mt-1">{title.description}</p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={isEquipped}
+                        onClick={() => handleEquipTitle(title.key)}
+                        className={isEquipped ? "btn btn-secondary opacity-80" : "btn-primary"}
+                      >
+                        {isEquipped ? "Equipped" : "Equip"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-400">No titles unlocked yet. Keep completing quests and focus sessions.</p>
+            )}
+            <button
+              type="button"
+              className="btn-secondary mt-4"
+              onClick={() => navigate("/share-card")}
+            >
+              Open Share Card
+            </button>
+          </div>
         </motion.div>
       </div>
     </div>

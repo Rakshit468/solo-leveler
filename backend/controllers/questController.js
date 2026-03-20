@@ -22,6 +22,7 @@ import {
   syncDualClassUnlock,
   toDateKey,
 } from "../services/streakService.js";
+import { getEquippedTitle, syncHunterTitles } from "../services/hunterTitleService.js";
 
 const getDifficultyBonus = (difficulty) => {
   const difficultyMap = {
@@ -465,6 +466,7 @@ export const completeQuest = async (req, res) => {
     refreshShield(user, now);
     await recomputeUserStreak(user, now);
     syncDualClassUnlock(user);
+    await syncHunterTitles(user);
 
     // Meaningful stat growth based on completion quality and quest challenge.
     const completedAt = quest.completedAt || now;
@@ -571,6 +573,7 @@ export const completeQuest = async (req, res) => {
         statGains,
         updatedStats: user.character.stats,
         streaks: user.streaks,
+        equippedTitle: getEquippedTitle(user),
         updatedSkills,
       },
     });
@@ -661,6 +664,8 @@ export const completeFocusSession = async (req, res) => {
     );
 
     await user.save();
+    await syncHunterTitles(user);
+    await user.save();
 
     await trackQuestEvent(req.user.id, "focus_completed", {
       questId: quest._id,
@@ -678,6 +683,7 @@ export const completeFocusSession = async (req, res) => {
         newLevel,
         newXP,
         newXPToNextLevel,
+        equippedTitle: getEquippedTitle(user),
       },
     });
   } catch (error) {

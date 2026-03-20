@@ -22,6 +22,7 @@ import {
   syncDualClassUnlock,
   toDateKey,
 } from '../services/streakService.js';
+import { getEquippedTitle, syncHunterTitles } from '../services/hunterTitleService.js';
 
 const isTrue = (value) => String(value).toLowerCase() === 'true';
 
@@ -66,6 +67,8 @@ const buildAuthUser = (user) => ({
   streaks: user.streaks,
   preferences: user.preferences,
   onboarding: user.onboarding,
+  hunterTitles: user.hunterTitles,
+  equippedTitle: getEquippedTitle(user),
 });
 
 const getCompletedQuestDateKeys = async (userId, now = new Date()) => {
@@ -360,6 +363,7 @@ export const login = async (req, res) => {
       user.onboarding.dualClassUnlockStreak = DUAL_CLASS_UNLOCK_STREAK_DAYS;
     }
     syncDualClassUnlock(user);
+    await syncHunterTitles(user);
     await user.save();
 
     if (isAtLeastOneDayOld) {
@@ -392,9 +396,17 @@ export const login = async (req, res) => {
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    await syncHunterTitles(user);
+    await user.save();
     res.json({
       success: true,
-      data: user,
+      data: {
+        ...user.toObject(),
+        equippedTitle: getEquippedTitle(user),
+      },
     });
   } catch (error) {
     console.error('Get profile error:', error);
@@ -427,10 +439,16 @@ export const updateProfile = async (req, res) => {
       { new: true, runValidators: true }
     ).select('-password');
 
+    await syncHunterTitles(user);
+    await user.save();
+
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      data: user,
+      data: {
+        ...user.toObject(),
+        equippedTitle: getEquippedTitle(user),
+      },
     });
   } catch (error) {
     console.error('Update profile error:', error);
@@ -665,5 +683,41 @@ export const useShieldNow = async (req, res) => {
   } catch (error) {
     console.error('Use shield error:', error);
     res.status(500).json({ message: 'Server error using shield' });
+  }
+};
+
+export const equipHunterTitle = async (req, res) => {
+  try {
+    const { titleKey } = req.body || {};
+    if (!titleKey) {
+      return res.status(400).json({ message: 'titleKey is required' });
+    }
+
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await syncHunterTitles(user);
+
+    const hasTitle = (user.hunterTitles?.unlocked || []).some((title) => title.key === titleKey);
+    if (!hasTitle) {
+      return res.status(400).json({ message: 'Title is not unlocked yet' });
+    }
+
+    user.hunterTitles.equippedKey = titleKey;
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: 'Hunter title equipped',
+      data: {
+        ...user.toObject(),
+        equippedTitle: getEquippedTitle(user),
+      },
+    });
+  } catch (error) {
+    console.error('Equip hunter title error:', error);
+    return res.status(500).json({ message: 'Server error equipping hunter title' });
   }
 };

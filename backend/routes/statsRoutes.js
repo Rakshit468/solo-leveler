@@ -5,6 +5,7 @@ import {
   addXP, 
   getAnalytics,
   getStreakTimeline,
+  getShareCard,
 } from '../controllers/statsController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -17,6 +18,7 @@ router.get('/', getStats);
 router.get('/leaderboard', getLeaderboard);
 router.get('/analytics', getAnalytics);
 router.get('/streak-timeline', getStreakTimeline);
+router.get('/share-card', getShareCard);
 router.post('/xp', addXP);
 
 export default router;

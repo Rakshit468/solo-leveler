@@ -35,6 +35,7 @@ export const authAPI = {
   setupOnboarding: (payload) => api.post("/auth/onboarding/setup", payload),
   updateStarterQuests: (payload) => api.put("/auth/onboarding/starter-quests", payload),
   useShieldNow: (payload) => api.post("/auth/streak/use-shield", payload),
+  equipHunterTitle: (payload) => api.post("/auth/titles/equip", payload),
 };
 
 // Quest API
@@ -63,6 +64,15 @@ export const statsAPI = {
   addXP: (xpData) => api.post("/stats/xp", xpData),
   getAnalytics: (params = {}) => api.get("/stats/analytics", { params }),
   getStreakTimeline: (params = {}) => api.get("/stats/streak-timeline", { params }),
+  getShareCard: () => api.get("/stats/share-card"),
+};
+
+export const challengeAPI = {
+  createChallenge: (payload) => api.post("/challenges", payload),
+  joinChallenge: (id, payload = {}) => api.post(`/challenges/${id}/join`, payload),
+  leaveChallenge: (id) => api.post(`/challenges/${id}/leave`),
+  getMyChallenges: () => api.get("/challenges/me"),
+  getChallengeLeaderboard: (id) => api.get(`/challenges/${id}/leaderboard`),
 };
 
 // Skills API

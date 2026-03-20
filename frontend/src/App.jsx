@@ -20,6 +20,8 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import AuthCallback from "./pages/AuthCallback";
 import Onboarding from "./pages/Onboarding";
+import Challenges from "./pages/Challenges";
+import ShareCard from "./pages/ShareCard";
 
 function App() {
   const { user, loading } = useAuth();
@@ -86,6 +88,8 @@ function App() {
             <Route path="/skills" element={<Skills />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/challenges" element={<Challenges />} />
+            <Route path="/share-card" element={<ShareCard />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
           </Route>

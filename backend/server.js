@@ -36,6 +36,7 @@ import authRoutes from "./routes/authRoutes.js";
 import questRoutes from "./routes/questRoutes.js";
 import statsRoutes from "./routes/statsRoutes.js";
 import skillRoutes from "./routes/skillRoutes.js";
+import challengeRoutes from "./routes/challengeRoutes.js";
 
 const app = express();
 
@@ -240,6 +241,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/quests", questRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/skills", skillRoutes);
+app.use("/api/challenges", challengeRoutes);
 
 // Test route
 app.get("/api/test", (req, res) => {

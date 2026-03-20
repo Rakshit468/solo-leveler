@@ -52,6 +52,7 @@ const Leaderboard = () => {
               characterPart.xp ?? entry.totalXP ?? entry.score ?? 0
             ),
             gold: characterPart.gold ?? 0,
+            title: entry.equippedTitle?.name || userPart?.equippedTitle?.name || null,
             rank: entry.rank || index + 1,
           };
         }
@@ -181,6 +182,9 @@ const Leaderboard = () => {
                 <p className="text-gray-400">
                   {user?.character?.name || user?.username}
                 </p>
+                {user?.equippedTitle?.name ? (
+                  <p className="text-xs text-primary-300 mt-1">{user.equippedTitle.name}</p>
+                ) : null}
               </div>
             </div>
             <div className="text-right">
@@ -347,6 +351,9 @@ const Leaderboard = () => {
                       {entry.characterName}
                     </h4>
                     <p className="text-sm text-gray-400">Level {entry.level}</p>
+                    {entry.title ? (
+                      <p className="text-xs text-primary-300 mt-1">{entry.title}</p>
+                    ) : null}
                   </div>
                 </div>
               </div>

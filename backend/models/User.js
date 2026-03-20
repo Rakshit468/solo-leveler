@@ -122,6 +122,20 @@ const userSchema = new mongoose.Schema(
         achievements: { type: Boolean, default: true },
       },
     },
+    hunterTitles: {
+      equippedKey: {
+        type: String,
+        default: "rookie_hunter",
+      },
+      unlocked: [
+        {
+          key: String,
+          name: String,
+          description: String,
+          unlockedAt: Date,
+        },
+      ],
+    },
     isEmailVerified: {
       type: Boolean,
       default: true,

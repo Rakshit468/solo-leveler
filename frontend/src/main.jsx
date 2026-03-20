@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { SocketProvider } from './contexts/SocketContext'
+import { FocusTimerProvider } from './contexts/FocusTimerContext'
 import App from './App.jsx'
 import './index.css'
 
@@ -11,7 +12,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AuthProvider>
         <SocketProvider>
-          <App />
+          <FocusTimerProvider>
+            <App />
+          </FocusTimerProvider>
         </SocketProvider>
       </AuthProvider>
     </BrowserRouter>

@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Pause, Play, Square, Timer } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Play, Timer } from "lucide-react";
 import { questAPI } from "../services/api";
 import toast from "react-hot-toast";
+import { useFocusTimer } from "../contexts/FocusTimerContext";
 
 const formatClock = (seconds) => {
   const safe = Math.max(0, seconds);
@@ -13,11 +14,9 @@ const formatClock = (seconds) => {
 };
 
 const FocusSessionModal = ({ quest, onClose, onSessionComplete }) => {
+  const { startTimer } = useFocusTimer();
   const [preset, setPreset] = useState(quest?.estimatedMinutes || 25);
   const [customMinutes, setCustomMinutes] = useState(30);
-  const [isRunning, setIsRunning] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
-  const [remainingSeconds, setRemainingSeconds] = useState((quest?.estimatedMinutes || 25) * 60);
   const [saving, setSaving] = useState(false);
 
   const activeMinutes = useMemo(() => {
@@ -27,69 +26,20 @@ const FocusSessionModal = ({ quest, onClose, onSessionComplete }) => {
     return Number(preset);
   }, [preset, customMinutes]);
 
-  useEffect(() => {
-    setRemainingSeconds(activeMinutes * 60);
-  }, [activeMinutes]);
-
-  useEffect(() => {
-    if (!isRunning) {
-      return undefined;
-    }
-
-    const timer = window.setInterval(() => {
-      setRemainingSeconds((prev) => {
-        if (prev <= 1) {
-          window.clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [isRunning]);
-
   const handleStart = async () => {
     try {
       setSaving(true);
       await questAPI.startFocusSession(quest._id, { presetMinutes: activeMinutes });
-      setHasStarted(true);
-      setIsRunning(true);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Could not start focus session");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCancel = async () => {
-    try {
-      setSaving(true);
-      await questAPI.cancelFocusSession(quest._id);
-      toast("Focus session cancelled");
-      onClose();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Could not cancel focus session");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleComplete = async () => {
-    try {
-      setSaving(true);
-      const spentMinutes = Math.max(1, Math.round((activeMinutes * 60 - remainingSeconds) / 60));
-      const response = await questAPI.completeFocusSession(quest._id, {
-        durationMinutes: spentMinutes,
+      startTimer({
+        questId: quest._id,
+        questTitle: quest.title,
         presetMinutes: activeMinutes,
       });
-      if (response.data?.success) {
-        toast.success(`Focus complete! +${response.data?.data?.xpGained || 0} XP`);
-        onSessionComplete?.(response.data?.data);
-        onClose();
-      }
+      toast.success("Focus started. Timer pinned at the top.");
+      onSessionComplete?.();
+      onClose();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Could not complete focus session");
+      toast.error(error.response?.data?.message || "Could not start focus session");
     } finally {
       setSaving(false);
     }
@@ -143,36 +93,19 @@ const FocusSessionModal = ({ quest, onClose, onSessionComplete }) => {
         <div className="mt-6 rounded-lg bg-dark-900 p-4 text-center">
           <div className="mb-2 inline-flex items-center gap-2 text-gray-400">
             <Timer className="h-4 w-4" />
-            <span className="text-xs uppercase tracking-wide">Session Timer</span>
+            <span className="text-xs uppercase tracking-wide">Selected Duration</span>
           </div>
-          <div className="text-4xl font-bold text-white">{formatClock(remainingSeconds)}</div>
+          <div className="text-4xl font-bold text-white">{formatClock(activeMinutes * 60)}</div>
+          <p className="mt-2 text-xs text-gray-400">After starting, this timer stays visible at the top across pages.</p>
         </div>
 
-        <div className="mt-5 flex items-center justify-between gap-2">
-          {!hasStarted ? (
-            <button type="button" onClick={handleStart} disabled={saving} className="btn-primary inline-flex items-center gap-2">
-              <Play className="h-4 w-4" />
-              Start
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsRunning((prev) => !prev)}
-              disabled={saving}
-              className="btn-secondary inline-flex items-center gap-2"
-            >
-              {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              {isRunning ? "Pause" : "Resume"}
-            </button>
-          )}
-
-          <button type="button" onClick={handleComplete} disabled={saving} className="btn-success">
-            Complete
+        <div className="mt-5 flex items-center justify-end gap-2">
+          <button type="button" onClick={onClose} disabled={saving} className="btn">
+            Close
           </button>
-
-          <button type="button" onClick={handleCancel} disabled={saving} className="btn inline-flex items-center gap-2">
-            <Square className="h-4 w-4" />
-            Cancel
+          <button type="button" onClick={handleStart} disabled={saving} className="btn-primary inline-flex items-center gap-2">
+            <Play className="h-4 w-4" />
+            Start Focus
           </button>
         </div>
       </div>

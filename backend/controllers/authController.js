@@ -404,12 +404,22 @@ export const getProfile = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { characterName, avatar, preferences } = req.body;
+    const { characterName, avatar, preferences, primaryClass } = req.body;
+
+    if (primaryClass !== undefined) {
+      const validClasses = ["scholar", "warrior", "builder", "strategist", null, ""];
+      if (!validClasses.includes(primaryClass)) {
+        return res.status(400).json({ message: "Invalid class selection" });
+      }
+    }
 
     const updateFields = {};
     if (characterName) updateFields['character.name'] = characterName;
     if (avatar) updateFields['character.avatar'] = avatar;
     if (preferences) updateFields.preferences = preferences;
+    if (primaryClass !== undefined && primaryClass !== "") {
+      updateFields['onboarding.primaryClass'] = String(primaryClass).toLowerCase();
+    }
 
     const user = await User.findByIdAndUpdate(
       req.user.id,

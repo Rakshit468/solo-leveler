@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Edit, Save, X, User, Mail, Crown } from "lucide-react";
+import { Edit, Save, X, User, Mail, Crown, ShieldAlert } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
 
@@ -17,6 +17,13 @@ const avatarOptions = [
   "beast-hunter-avatar.svg",
 ];
 
+const classOptions = [
+  { value: "scholar", label: "Scholar" },
+  { value: "warrior", label: "Warrior" },
+  { value: "builder", label: "Builder" },
+  { value: "strategist", label: "Strategist" },
+];
+
 const Profile = () => {
   const { user, updateProfile } = useAuth();
   const [editing, setEditing] = useState(false);
@@ -24,6 +31,7 @@ const Profile = () => {
   const [formData, setFormData] = useState({
     characterName: user?.character?.name || "",
     avatar: user?.character?.avatar || "shadow-monarch-avatar.svg",
+    primaryClass: user?.onboarding?.primaryClass || "",
   });
 
   const handleChange = (e) => {
@@ -39,6 +47,7 @@ const Profile = () => {
       const result = await updateProfile({
         characterName: formData.characterName,
         avatar: formData.avatar,
+        primaryClass: formData.primaryClass,
       });
       if (result.success) {
         toast.success("Profile updated successfully!");
@@ -58,9 +67,12 @@ const Profile = () => {
     setFormData({
       characterName: user?.character?.name || "",
       avatar: user?.character?.avatar || "shadow-monarch-avatar.svg",
+      primaryClass: user?.onboarding?.primaryClass || "",
     });
     setEditing(false);
   };
+
+  const missingPrimaryClass = !user?.onboarding?.primaryClass;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -71,6 +83,20 @@ const Profile = () => {
           Manage your character and account settings
         </p>
       </div>
+
+      {missingPrimaryClass && (
+        <div className="card border border-warning-500/50 bg-warning-500/10">
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="h-5 w-5 text-warning-400 mt-0.5" />
+            <div>
+              <h3 className="text-white font-semibold">Class required before social challenges</h3>
+              <p className="text-gray-300 text-sm mt-1">
+                Select your primary hunter class so your share card and challenge profile are complete.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Character Card */}
         <motion.div
@@ -149,6 +175,24 @@ const Profile = () => {
                       </button>
                     ))}
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Primary Class
+                  </label>
+                  <select
+                    name="primaryClass"
+                    className="input"
+                    value={formData.primaryClass}
+                    onChange={handleChange}
+                  >
+                    <option value="">Select class</option>
+                    {classOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex space-x-2">
                   <button
@@ -321,6 +365,14 @@ const Profile = () => {
                   {user?.createdAt
                     ? new Date(user.createdAt).toLocaleDateString()
                     : "Recently"}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm">Primary Class</p>
+                <p className="text-white">
+                  {user?.onboarding?.primaryClass
+                    ? `${user.onboarding.primaryClass.charAt(0).toUpperCase()}${user.onboarding.primaryClass.slice(1)}`
+                    : "Not selected"}
                 </p>
               </div>
             </div>

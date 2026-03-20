@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import io from "socket.io-client";
 import { useAuth } from "./AuthContext";
+import { useNotifications } from "./NotificationContext";
 import toast from "react-hot-toast";
 
 const SocketContext = createContext();
@@ -16,28 +17,55 @@ export const useSocket = () => {
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const { user } = useAuth();
+  const { addNotification } = useNotifications();
 
   useEffect(() => {
     if (user) {
-      const newSocket = io(import.meta.env.VITE_API_URL);
+      const newSocket = io(import.meta.env.VITE_API_URL, {
+        reconnection: true,
+        reconnectionAttempts: 8,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        transports: ["websocket", "polling"],
+      });
 
       newSocket.on("connect", () => {
         console.log("🔌 Connected to server");
-        newSocket.emit("join", user.id);
+        newSocket.emit("join", user.id || user._id);
+        addNotification({
+          type: "success",
+          title: "Connected",
+          message: "Real-time updates are active.",
+          persistent: false,
+        });
       });
 
       newSocket.on("questCompleted", (data) => {
-        if (data.userId !== user.id) {
-          toast(`🎉 ${data.questTitle} completed by another user!`, {
+        if (String(data.userId) !== String(user.id || user._id)) {
+          const message = data.questTitle
+            ? `🎉 ${data.questTitle} completed by another hunter!`
+            : "🎉 Another hunter completed a quest!";
+          toast(message, {
             duration: 3000,
+          });
+          addNotification({
+            type: "quest",
+            title: "Quest activity",
+            message,
           });
         }
       });
 
       newSocket.on("levelUp", (data) => {
-        if (data.userId !== user.id) {
-          toast(`⭐ Someone leveled up to Level ${data.newLevel}!`, {
+        if (String(data.userId) !== String(user.id || user._id)) {
+          const message = `⭐ A hunter leveled up to Level ${data.newLevel}!`;
+          toast(message, {
             duration: 3000,
+          });
+          addNotification({
+            type: "success",
+            title: "Level up spotted",
+            message,
           });
         }
       });
@@ -51,14 +79,34 @@ export const SocketProvider = ({ children }) => {
         console.log("🔌 Disconnected from server");
       });
 
+      newSocket.on("reconnect", () => {
+        toast.success("Connection restored");
+      });
+
+      newSocket.on("connect_error", () => {
+        addNotification({
+          type: "warning",
+          title: "Connection unstable",
+          message: "Trying to reconnect for live updates...",
+          persistent: false,
+        });
+      });
+
       setSocket(newSocket);
 
       return () => {
+        newSocket.off("connect");
+        newSocket.off("questCompleted");
+        newSocket.off("levelUp");
+        newSocket.off("leaderboardUpdate");
+        newSocket.off("disconnect");
+        newSocket.off("reconnect");
+        newSocket.off("connect_error");
         newSocket.close();
         setSocket(null);
       };
     }
-  }, [user]);
+  }, [addNotification, user]);
 
   const emitEvent = (event, data) => {
     if (socket) {

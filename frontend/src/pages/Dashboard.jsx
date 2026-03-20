@@ -17,6 +17,7 @@ import { authAPI, questAPI, statsAPI } from '../services/api'
 import StatCard from '../components/StatCard'
 import QuestCard from '../components/QuestCard'
 import LoadingSpinner from '../components/LoadingSpinner'
+import StateCard from '../components/StateCard'
 import toast from 'react-hot-toast'
 
 const Dashboard = () => {
@@ -24,6 +25,7 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null)
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [streakTimeline, setStreakTimeline] = useState([])
   const [shieldSaving, setShieldSaving] = useState(false)
   const [selectedShieldDate, setSelectedShieldDate] = useState('')
@@ -34,6 +36,7 @@ const Dashboard = () => {
 
   const loadDashboardData = async () => {
     try {
+      setError('')
       const [dashboardResponse, statsResponse] = await Promise.all([
         questAPI.getDashboardData(),
         statsAPI.getStats()
@@ -50,6 +53,7 @@ const Dashboard = () => {
       setStreakTimeline(timelineResponse.data?.data?.timeline || [])
     } catch (error) {
       console.error('Error loading dashboard data:', error)
+      setError(error.response?.data?.message || 'Failed to load dashboard')
     } finally {
       setLoading(false)
     }
@@ -68,6 +72,21 @@ const Dashboard = () => {
     )
   }
 
+  if (error) {
+    return (
+      <StateCard
+        tone="error"
+        title="Unable to load dashboard"
+        description={error}
+        actionLabel="Retry"
+        onAction={() => {
+          setLoading(true)
+          loadDashboardData()
+        }}
+      />
+    )
+  }
+
   const dailyQuests = dashboardData?.quests?.daily || []
   const weeklyQuests = dashboardData?.quests?.weekly || []
   const bossQuests = dashboardData?.quests?.boss || []
@@ -78,6 +97,8 @@ const Dashboard = () => {
   const unlockStreak = progression.dualClassUnlockStreak || 60
   const currentStreak = user?.streaks?.current || 0
   const shieldAutoUse = progression?.shieldAutoUse !== false
+  const shieldCharges = progression?.shieldCharges ?? user?.streaks?.shieldCharges ?? 0
+  const shieldLastRefillAt = user?.streaks?.shieldLastRefillAt
 
   const handleShieldAutoToggle = async () => {
     try {
@@ -235,7 +256,7 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-300">
             <Shield className="h-4 w-4 text-secondary-400" />
-            <span>{progression.shieldCharges > 0 ? 'Shield Ready' : 'Shield Used'}</span>
+            <span>{shieldCharges > 0 ? 'Shield Ready' : 'Shield Used'}</span>
           </div>
         </div>
 
@@ -263,6 +284,17 @@ const Dashboard = () => {
           )}
 
           <div className="mt-4 border-t border-dark-700 pt-4 space-y-3">
+            <div className="rounded-lg border border-dark-700 bg-dark-900/70 p-3 text-sm text-gray-300">
+              <p>
+                Shield charges: <span className="text-white font-semibold">{shieldCharges}</span>
+              </p>
+              <p className="mt-1 text-xs text-gray-400">
+                {shieldLastRefillAt
+                  ? `Last refill: ${new Date(shieldLastRefillAt).toLocaleString()}`
+                  : 'Your shield refills automatically after cooldown when available.'}
+              </p>
+            </div>
+
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm text-white">Auto-use Shield</p>

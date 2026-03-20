@@ -4,12 +4,14 @@ import { Trophy, Crown, Medal, Star, TrendingUp } from "lucide-react";
 import { statsAPI } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
+import StateCard from "../components/StateCard";
 import clsx from "clsx";
 
 const Leaderboard = () => {
   const { user } = useAuth();
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [selectedType, setSelectedType] = useState("overall");
 
   const leaderboardTypes = [
@@ -25,6 +27,7 @@ const Leaderboard = () => {
   const loadLeaderboard = async () => {
     setLoading(true);
     try {
+      setError("");
       const response = await statsAPI.getLeaderboard({ type: selectedType });
       const normalizedEntries = response.data.data.entries.map(
         (entry, index) => {
@@ -49,6 +52,7 @@ const Leaderboard = () => {
       setLeaderboard(normalizedEntries);
     } catch (error) {
       console.error("Error loading leaderboard:", error);
+      setError(error.response?.data?.message || "Failed to load leaderboard");
     } finally {
       setLoading(false);
     }
@@ -95,6 +99,27 @@ const Leaderboard = () => {
       <div className="flex items-center justify-center h-64">
         <LoadingSpinner size="lg" />
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <StateCard
+        tone="error"
+        title="Unable to load leaderboard"
+        description={error}
+        actionLabel="Retry"
+        onAction={loadLeaderboard}
+      />
+    );
+  }
+
+  if (!leaderboard.length) {
+    return (
+      <StateCard
+        title="No rankings yet"
+        description="Complete a few quests and check back to see where hunters stand."
+      />
     );
   }
 
@@ -174,10 +199,12 @@ const Leaderboard = () => {
             transition={{ delay: 0.1 }}
           >
             <div className="bg-gradient-to-t from-gray-600 to-gray-500 rounded-t-lg p-6 pb-8 relative">
-              <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center overflow-hidden">
-                <span className="text-lg font-bold text-white">
-                  {leaderboard[1]?.characterName?.charAt(0) || "2"}
-                </span>
+              <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center overflow-hidden border-2 border-primary-500">
+                <img
+                  src={`/avatars/${leaderboard[1]?.avatar || "shadow-monarch-avatar.svg"}`}
+                  alt="avatar"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <h3 className="font-semibold text-white truncate">
                 {leaderboard[1]?.characterName}
@@ -202,10 +229,12 @@ const Leaderboard = () => {
             transition={{ delay: 0.2 }}
           >
             <div className="bg-gradient-to-t from-yellow-600 to-yellow-500 rounded-t-lg p-6 pb-8 relative">
-              <div className="w-20 h-20 mx-auto mb-3 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center ring-4 ring-yellow-400 overflow-hidden">
-                <span className="text-xl font-bold text-white">
-                  {leaderboard[0]?.characterName?.charAt(0) || "1"}
-                </span>
+              <div className="w-20 h-20 mx-auto mb-3 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center ring-4 ring-yellow-400 overflow-hidden border-2 border-primary-500">
+                <img
+                  src={`/avatars/${leaderboard[0]?.avatar || "shadow-monarch-avatar.svg"}`}
+                  alt="avatar"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <h3 className="font-semibold text-white truncate">
                 {leaderboard[0]?.characterName}
@@ -230,10 +259,12 @@ const Leaderboard = () => {
             transition={{ delay: 0.3 }}
           >
             <div className="bg-gradient-to-t from-orange-600 to-orange-500 rounded-t-lg p-6 pb-8 relative">
-              <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center overflow-hidden">
-                <span className="text-lg font-bold text-white">
-                  {leaderboard[2]?.characterName?.charAt(0) || "3"}
-                </span>
+              <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center overflow-hidden border-2 border-primary-500">
+                <img
+                  src={`/avatars/${leaderboard[2]?.avatar || "shadow-monarch-avatar.svg"}`}
+                  alt="avatar"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <h3 className="font-semibold text-white truncate">
                 {leaderboard[2]?.characterName}

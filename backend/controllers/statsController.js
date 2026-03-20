@@ -4,6 +4,22 @@ import Quest from "../models/Quest.js";
 import XPLog from "../models/XPLog.js";
 import LeaderboardEntry from "../models/Leaderboard.js";
 
+const parseLimit = (value, fallback = 50) => {
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed)) return fallback;
+  return Math.min(100, Math.max(1, parsed));
+};
+
+const getOverallScore = (character = {}, streaks = {}) => {
+  const level = Number(character.level || 0);
+  const xp = Number(character.xp || 0);
+  const totalStats = Number(character.totalStats || 0);
+  const streak = Number(streaks.current || 0);
+
+  // Keep score stable and easy to reason about for ranking tie-breakers.
+  return level * 10000 + xp * 10 + totalStats * 5 + streak * 20;
+};
+
 export const getStats = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -88,19 +104,27 @@ export const getStats = async (req, res) => {
 export const getLeaderboard = async (req, res) => {
   try {
     const { type = "overall", limit = 50 } = req.query;
+    const safeLimit = parseLimit(limit, 50);
 
     let leaderboard;
 
     if (type === "overall") {
       leaderboard = await User.find({ isActive: true })
         .select(
-          "username character.name character.level character.xp character.totalStats"
+          "username character.name character.avatar character.level character.xp character.totalStats character.gold streaks.current"
         )
-        .sort({ "character.level": -1, "character.xp": -1 })
-        .limit(parseInt(limit));
+        .sort({
+          "character.level": -1,
+          "character.xp": -1,
+          "streaks.current": -1,
+          "character.totalStats": -1,
+          createdAt: 1,
+        })
+        .limit(safeLimit);
 
       leaderboard = leaderboard.map((user, index) => ({
         ...user.toObject(),
+        score: getOverallScore(user.character, user.streaks),
         rank: index + 1,
       }));
     } else if (type === "weekly" || type === "monthly") {
@@ -137,6 +161,20 @@ export const getLeaderboard = async (req, res) => {
         },
         { $unwind: "$user" },
         {
+          $match: {
+            "user.isActive": true,
+          },
+        },
+        {
+          $sort: {
+            totalXP: -1,
+            questsCompleted: -1,
+            "user.streaks.current": -1,
+            "user.character.level": -1,
+          },
+        },
+        { $limit: safeLimit },
+        {
           $project: {
             user: 1,
             score: "$totalXP",
@@ -155,7 +193,7 @@ export const getLeaderboard = async (req, res) => {
       leaderboard = await LeaderboardEntry.find({ type })
         .populate("user", "username character.name character.avatar")
         .sort({ rank: 1 })
-        .limit(parseInt(limit));
+        .limit(safeLimit);
     }
 
     res.json({

@@ -2,7 +2,6 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useAuth } from "./contexts/AuthContext";
-import { NotificationProvider } from "./contexts/NotificationContext";
 
 // Components
 import Layout from "./components/Layout";
@@ -24,6 +23,8 @@ import Onboarding from "./pages/Onboarding";
 
 function App() {
   const { user, loading } = useAuth();
+  const hasPrimaryClass = Boolean(user?.onboarding?.primaryClass);
+  const isProfileReady = Boolean(user?.onboarding?.completed && hasPrimaryClass);
 
   // Initialize theme on mount
   React.useEffect(() => {
@@ -44,8 +45,7 @@ function App() {
   }
 
   return (
-    <NotificationProvider>
-      <>
+    <>
         <Routes>
           {/* Public Routes */}
           <Route
@@ -61,7 +61,7 @@ function App() {
             path="/onboarding"
             element={
               user ? (
-                user?.onboarding?.completed ? <Navigate to="/dashboard" /> : <Onboarding />
+                isProfileReady ? <Navigate to="/dashboard" /> : <Onboarding />
               ) : (
                 <Navigate to="/login" />
               )
@@ -73,7 +73,7 @@ function App() {
             path="/"
             element={
               user ? (
-                user?.onboarding?.completed ? <Layout /> : <Navigate to="/onboarding" />
+                isProfileReady ? <Layout /> : <Navigate to="/onboarding" />
               ) : (
                 <Navigate to="/login" />
               )
@@ -105,7 +105,6 @@ function App() {
           }}
         />
       </>
-    </NotificationProvider>
   );
 }
 

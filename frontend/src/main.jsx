@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { NotificationProvider } from './contexts/NotificationContext'
 import { SocketProvider } from './contexts/SocketContext'
 import { FocusTimerProvider } from './contexts/FocusTimerContext'
 import App from './App.jsx'
@@ -11,11 +12,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <SocketProvider>
-          <FocusTimerProvider>
-            <App />
-          </FocusTimerProvider>
-        </SocketProvider>
+        <NotificationProvider>
+          <SocketProvider>
+            <FocusTimerProvider>
+              <App />
+            </FocusTimerProvider>
+          </SocketProvider>
+        </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,

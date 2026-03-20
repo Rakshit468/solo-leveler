@@ -5,6 +5,7 @@ import { questAPI } from "../services/api";
 import { useNotifications } from "../contexts/NotificationContext";
 import QuestCard from "../components/QuestCard";
 import LoadingSpinner from "../components/LoadingSpinner";
+import StateCard from "../components/StateCard";
 import CreateQuestModal from "../components/CreateQuestModal";
 import toast from "react-hot-toast";
 import { useDebounce } from "../hooks/useDebounce";
@@ -14,6 +15,7 @@ const Quests = () => {
   const [quests, setQuests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [filters, setFilters] = useState({
     type: "all",
     status: "active",
@@ -30,6 +32,7 @@ const Quests = () => {
   const loadQuests = useCallback(
     async (searchTerm) => {
       try {
+        setLoadError("");
         const params = {
           search: searchTerm,
           type: filters.type,
@@ -48,6 +51,7 @@ const Quests = () => {
         setQuests(response.data.data.quests);
       } catch (error) {
         console.error("Error loading quests:", error);
+        setLoadError(error.response?.data?.message || "Failed to load quests");
         toast.error("Failed to load quests");
       } finally {
         setLoading(false);
@@ -77,9 +81,31 @@ const Quests = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" />
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {Array.from({ length: 6 }).map((_, idx) => (
+          <div key={idx} className="card animate-pulse">
+            <div className="h-5 w-2/3 rounded bg-dark-700" />
+            <div className="mt-4 h-3 w-full rounded bg-dark-700" />
+            <div className="mt-2 h-3 w-5/6 rounded bg-dark-700" />
+            <div className="mt-6 h-10 w-full rounded bg-dark-700" />
+          </div>
+        ))}
       </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <StateCard
+        tone="error"
+        title="Unable to load quests"
+        description={loadError}
+        actionLabel="Retry"
+        onAction={() => {
+          setLoading(true);
+          loadQuests(debouncedSearch);
+        }}
+      />
     );
   }
 

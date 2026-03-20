@@ -19,17 +19,17 @@ const Header = () => {
 
   return (
     <header className="bg-dark-800 border-b border-dark-700 px-4 py-3 sm:px-6 sm:py-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 pr-3">
           <h2 className="text-lg font-bold text-white sm:text-2xl truncate">
             Welcome back, Hunter!
           </h2>
           <p className="hidden text-gray-400 sm:block">Ready to level up your life?</p>
         </div>
-        <div className="flex items-center space-x-2 sm:space-x-4">
+        <div className="flex shrink-0 items-center space-x-1 sm:space-x-3">
           {user && (
             <>
-              <div className="hidden items-center space-x-2 sm:flex">
+              <div className="hidden items-center space-x-2 md:flex">
                 <img
                   src={`/avatars/${
                     user.character?.avatar || "shadow-monarch-avatar.svg"
@@ -60,6 +60,7 @@ const Header = () => {
           <button
             onClick={() => setNotificationOpen(!notificationOpen)}
             className="relative p-2 text-gray-400 hover:text-white transition-colors"
+            aria-label="Open notifications"
           >
             <Bell className="h-5 w-5" />
             {notifications.length > 0 && (
@@ -71,12 +72,14 @@ const Header = () => {
           <button 
             onClick={() => navigate("/settings")}
             className="p-2 text-gray-400 hover:text-white transition-colors"
+            aria-label="Open settings"
           >
             <Settings className="h-5 w-5" />
           </button>
           <button
             onClick={handleLogout}
             className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+            aria-label="Logout"
           >
             <LogOut className="h-5 w-5" />
           </button>

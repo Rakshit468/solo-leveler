@@ -1,14 +1,21 @@
 import Quest from "../models/Quest.js";
 import User from "../models/User.js";
 import XPLog from "../models/XPLog.js";
+import UserEvent from "../models/UserEvent.js";
 import { UserSkill } from "../models/Skill.js";
 import { validationResult } from "express-validator";
+import { RECOVERY_QUEST } from "../config/onboardingConfig.js";
 import {
   buildGoogleCalendarAuthUrl,
   exchangeGoogleCalendarCode,
   removeGoogleCalendarEvent,
   syncQuestWithGoogleCalendar,
 } from "../services/googleCalendarService.js";
+import {
+  applyShieldForMissedDay,
+  refreshShield,
+  syncDualClassUnlock,
+} from "../services/streakService.js";
 
 const getDifficultyBonus = (difficulty) => {
   const difficultyMap = {
@@ -42,6 +49,70 @@ const parseDate = (value) => {
 
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+};
+
+const createRecoveryQuestIfNeeded = async (user, missedDays) => {
+  if (missedDays < 1) {
+    return null;
+  }
+
+  const now = new Date();
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+
+  const lastRecoveryAt = user.onboarding?.lastRecoveryQuestAt
+    ? new Date(user.onboarding.lastRecoveryQuestAt)
+    : null;
+  if (lastRecoveryAt) {
+    lastRecoveryAt.setHours(0, 0, 0, 0);
+    if (lastRecoveryAt.getTime() === today.getTime()) {
+      return null;
+    }
+  }
+
+  const existingToday = await Quest.findOne({
+    user: user._id,
+    isRecoveryQuest: true,
+    status: "active",
+    createdAt: {
+      $gte: today,
+      $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
+    },
+  }).select("_id");
+
+  if (existingToday) {
+    return null;
+  }
+
+  const recoveryQuest = new Quest({
+    user: user._id,
+    title: RECOVERY_QUEST.title,
+    description: RECOVERY_QUEST.description,
+    category: RECOVERY_QUEST.category,
+    type: RECOVERY_QUEST.type,
+    difficulty: RECOVERY_QUEST.difficulty,
+    priority: RECOVERY_QUEST.priority,
+    tags: RECOVERY_QUEST.tags,
+    templateKey: RECOVERY_QUEST.templateKey,
+    isRecoveryQuest: true,
+  });
+
+  recoveryQuest.xpReward = recoveryQuest.calculateXP();
+  await recoveryQuest.save();
+
+  user.onboarding = user.onboarding || {};
+  user.onboarding.lastRecoveryQuestAt = now;
+
+  await UserEvent.create({
+    user: user._id,
+    eventName: "recovery_quest_created",
+    metadata: {
+      missedDays,
+      questId: recoveryQuest._id,
+    },
+  });
+
+  return recoveryQuest;
 };
 
 export const getQuests = async (req, res) => {
@@ -130,6 +201,15 @@ export const createQuest = async (req, res) => {
     quest.xpReward = quest.calculateXP();
 
     await quest.save();
+
+    const questCount = await Quest.countDocuments({ user: req.user.id });
+    if (questCount === 1) {
+      await UserEvent.create({
+        user: req.user.id,
+        eventName: "first_quest_created",
+        metadata: { questId: quest._id },
+      });
+    }
 
     const user = await User.findById(req.user.id);
     if (user?.integrations?.googleCalendar?.connected) {
@@ -237,16 +317,33 @@ export const completeQuest = async (req, res) => {
 
     // Complete the quest
     quest.complete();
+
+    const recoveryBonusXP = quest.isRecoveryQuest ? 25 : 0;
+    if (recoveryBonusXP > 0) {
+      quest.xpReward += recoveryBonusXP;
+      const completionIndex = quest.completionHistory.length - 1;
+      if (completionIndex >= 0) {
+        quest.completionHistory[completionIndex].xpEarned = quest.xpReward;
+        quest.completionHistory[completionIndex].notes = 'Recovery quest completed (+bonus XP)';
+      }
+    }
+
     await quest.save();
 
     // Update user XP and level using the new model method
     const user = await User.findById(req.user.id);
+    applyShieldForMissedDay(user, new Date());
+    refreshShield(user, new Date());
     const { leveledUp, newLevel, newXP, newXPToNextLevel } = await user.addXP(
       quest.xpReward,
       "quest",
       quest._id,
       `Completed quest: ${quest.title}`,
-      { questTitle: quest.title, multiplier: 1 }
+      {
+        questTitle: quest.title,
+        multiplier: 1,
+        recoveryBonusXP,
+      }
     );
 
     // Update streak info
@@ -273,6 +370,7 @@ export const completeQuest = async (req, res) => {
 
     user.streaks.longest = Math.max(user.streaks.longest, user.streaks.current);
     user.streaks.lastActivity = now;
+    syncDualClassUnlock(user);
 
     // Meaningful stat growth based on completion quality and quest challenge.
     const completedAt = quest.completedAt || now;
@@ -345,6 +443,7 @@ export const completeQuest = async (req, res) => {
         userId: user._id,
         questId: quest._id,
         xpGained: quest.xpReward,
+        recoveryBonusXP,
         leveledUp,
         newLevel,
         streaks: user.streaks,
@@ -363,6 +462,7 @@ export const completeQuest = async (req, res) => {
       data: {
         quest,
         xpGained: quest.xpReward,
+        recoveryBonusXP,
         leveledUp,
         newLevel,
         newXP,
@@ -420,6 +520,13 @@ export const deleteQuest = async (req, res) => {
 export const getDashboardData = async (req, res) => {
   try {
     const userId = req.user.id;
+    const user = await User.findById(userId);
+
+    const shieldResolution = applyShieldForMissedDay(user, new Date());
+    refreshShield(user, new Date());
+    syncDualClassUnlock(user);
+    const recoveryQuest = await createRecoveryQuestIfNeeded(user, shieldResolution.missedDays);
+    await user.save();
 
     // Get quest statistics
     const [dailyQuests, weeklyQuests, bossQuests, completedToday] =
@@ -448,6 +555,14 @@ export const getDashboardData = async (req, res) => {
           weekly: weeklyQuests,
           boss: bossQuests,
           completedToday,
+        },
+        progression: {
+          primaryClass: user?.onboarding?.primaryClass || null,
+          dualClassUnlocked: Boolean(user?.onboarding?.dualClassUnlocked),
+          dualClassUnlockStreak: user?.onboarding?.dualClassUnlockStreak || 60,
+          shieldCharges: user?.streaks?.shieldCharges ?? 1,
+          shieldLastUsedAt: user?.streaks?.shieldLastUsedAt || null,
+          recoveryQuestCreated: Boolean(recoveryQuest),
         },
         recentActivity,
       },

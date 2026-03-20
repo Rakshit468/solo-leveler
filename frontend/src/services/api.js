@@ -31,6 +31,9 @@ export const authAPI = {
   login: (credentials) => api.post("/auth/login", credentials),
   getProfile: () => api.get("/auth/profile"),
   updateProfile: (profileData) => api.put("/auth/profile", profileData),
+  getOnboardingOptions: () => api.get("/auth/onboarding/options"),
+  setupOnboarding: (payload) => api.post("/auth/onboarding/setup", payload),
+  updateStarterQuests: (payload) => api.put("/auth/onboarding/starter-quests", payload),
 };
 
 // Quest API

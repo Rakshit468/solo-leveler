@@ -20,6 +20,7 @@ import Analytics from "./pages/Analytics";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import AuthCallback from "./pages/AuthCallback";
+import Onboarding from "./pages/Onboarding";
 
 function App() {
   const { user, loading } = useAuth();
@@ -56,9 +57,28 @@ function App() {
             element={!user ? <Register /> : <Navigate to="/dashboard" />}
           />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route
+            path="/onboarding"
+            element={
+              user ? (
+                user?.onboarding?.completed ? <Navigate to="/dashboard" /> : <Onboarding />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
 
           {/* Protected Routes */}
-          <Route path="/" element={user ? <Layout /> : <Navigate to="/login" />}>
+          <Route
+            path="/"
+            element={
+              user ? (
+                user?.onboarding?.completed ? <Layout /> : <Navigate to="/onboarding" />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          >
             <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/quests" element={<Quests />} />

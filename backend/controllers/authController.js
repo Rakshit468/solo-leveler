@@ -1,8 +1,20 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User from '../models/User.js';
+import Quest from '../models/Quest.js';
+import UserEvent from '../models/UserEvent.js';
 import { validationResult } from 'express-validator';
 import { sendOtpEmail } from '../services/emailService.js';
+import {
+  CLASS_DEFINITIONS,
+  DUAL_CLASS_UNLOCK_STREAK_DAYS,
+  STARTER_QUESTS,
+} from '../config/onboardingConfig.js';
+import {
+  applyShieldForMissedDay,
+  refreshShield,
+  syncDualClassUnlock,
+} from '../services/streakService.js';
 
 const isTrue = (value) => String(value).toLowerCase() === 'true';
 
@@ -26,6 +38,18 @@ const setUserOtp = (user, otp) => {
   };
 };
 
+const trackUserEvent = async (userId, eventName, metadata = {}) => {
+  try {
+    await UserEvent.create({
+      user: userId,
+      eventName,
+      metadata,
+    });
+  } catch (error) {
+    console.error(`Track event failed (${eventName}):`, error?.message || error);
+  }
+};
+
 const buildAuthUser = (user) => ({
   id: user._id,
   username: user.username,
@@ -34,6 +58,7 @@ const buildAuthUser = (user) => ({
   achievements: user.achievements,
   streaks: user.streaks,
   preferences: user.preferences,
+  onboarding: user.onboarding,
 });
 
 export const register = async (req, res) => {
@@ -131,6 +156,8 @@ export const register = async (req, res) => {
         otp: emailDeliveryFailed && allowOtpInResponse ? otp : undefined,
       },
     });
+
+    await trackUserEvent(user._id, 'register_otp_sent');
   } catch (error) {
     console.error('Register error:', error);
     res.status(500).json({ message: 'Server error during registration' });
@@ -177,6 +204,8 @@ export const verifySignupOtp = async (req, res) => {
       lastSentAt: null,
     };
     await user.save();
+
+    await trackUserEvent(user._id, 'signup_completed');
 
     const token = generateToken(user._id);
     res.json({
@@ -282,6 +311,11 @@ export const login = async (req, res) => {
     }
 
     const now = new Date();
+    const accountAgeMs = now.getTime() - new Date(user.createdAt).getTime();
+    const isAtLeastOneDayOld = accountAgeMs >= 24 * 60 * 60 * 1000;
+
+    applyShieldForMissedDay(user, now);
+    refreshShield(user, now);
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);
     const yesterday = new Date(today);
@@ -304,7 +338,23 @@ export const login = async (req, res) => {
 
     user.streaks.longest = Math.max(user.streaks.longest, user.streaks.current);
     user.streaks.lastActivity = now;
+    user.onboarding = user.onboarding || {};
+    if (!user.onboarding.dualClassUnlockStreak) {
+      user.onboarding.dualClassUnlockStreak = DUAL_CLASS_UNLOCK_STREAK_DAYS;
+    }
+    syncDualClassUnlock(user);
     await user.save();
+
+    if (isAtLeastOneDayOld) {
+      const existingReturnEvent = await UserEvent.findOne({
+        user: user._id,
+        eventName: 'day1_returned',
+      }).select('_id');
+
+      if (!existingReturnEvent) {
+        await trackUserEvent(user._id, 'day1_returned');
+      }
+    }
 
     const token = generateToken(user._id);
 
@@ -358,5 +408,145 @@ export const updateProfile = async (req, res) => {
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ message: 'Server error updating profile' });
+  }
+};
+
+export const getOnboardingOptions = async (_req, res) => {
+  try {
+    const classes = Object.values(CLASS_DEFINITIONS);
+    res.json({
+      success: true,
+      data: {
+        dualClassUnlockStreak: DUAL_CLASS_UNLOCK_STREAK_DAYS,
+        classes,
+      },
+    });
+  } catch (error) {
+    console.error('Get onboarding options error:', error);
+    res.status(500).json({ message: 'Server error fetching onboarding options' });
+  }
+};
+
+export const setupOnboarding = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { primaryClass } = req.body;
+    const selectedClass = String(primaryClass || '').toLowerCase();
+    if (!STARTER_QUESTS[selectedClass]) {
+      return res.status(400).json({ message: 'Invalid class selection' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const now = new Date();
+
+    await Quest.deleteMany({
+      user: user._id,
+      isStarterQuest: true,
+      status: 'active',
+    });
+
+    const starterQuestsPayload = STARTER_QUESTS[selectedClass].slice(0, 3).map((template) => {
+      const quest = new Quest({
+        user: user._id,
+        title: template.title,
+        description: template.description,
+        category: template.category,
+        type: template.type,
+        difficulty: template.difficulty,
+        priority: template.priority,
+        tags: template.tags,
+        isStarterQuest: true,
+        templateKey: template.templateKey,
+      });
+
+      quest.xpReward = quest.calculateXP();
+      return quest;
+    });
+
+    const starterQuests = await Quest.insertMany(starterQuestsPayload);
+
+    user.onboarding = {
+      ...user.onboarding,
+      completed: true,
+      completedAt: now,
+      primaryClass: selectedClass,
+      dualClassUnlockStreak: DUAL_CLASS_UNLOCK_STREAK_DAYS,
+      dualClassUnlocked: (user.streaks?.current || 0) >= DUAL_CLASS_UNLOCK_STREAK_DAYS,
+    };
+
+    await user.save();
+
+    await trackUserEvent(user._id, 'onboarding_started', { primaryClass: selectedClass });
+    await trackUserEvent(user._id, 'starter_pack_selected', {
+      primaryClass: selectedClass,
+      questCount: starterQuests.length,
+    });
+    await trackUserEvent(user._id, 'onboarding_completed', { primaryClass: selectedClass });
+
+    res.json({
+      success: true,
+      message: 'Onboarding completed successfully',
+      data: {
+        user: buildAuthUser(user),
+        starterQuests,
+      },
+    });
+  } catch (error) {
+    console.error('Setup onboarding error:', error);
+    res.status(500).json({ message: 'Server error completing onboarding' });
+  }
+};
+
+export const updateStarterQuests = async (req, res) => {
+  try {
+    const { quests } = req.body;
+    if (!Array.isArray(quests)) {
+      return res.status(400).json({ message: 'Invalid quests payload' });
+    }
+
+    const updates = [];
+    for (const item of quests) {
+      if (!item?.id) continue;
+      const updateData = {};
+      if (typeof item.title === 'string') {
+        updateData.title = item.title.trim().slice(0, 100);
+      }
+      if (typeof item.description === 'string') {
+        updateData.description = item.description.trim().slice(0, 500);
+      }
+      if (Object.keys(updateData).length === 0) continue;
+
+      const updated = await Quest.findOneAndUpdate(
+        {
+          _id: item.id,
+          user: req.user.id,
+          isStarterQuest: true,
+          status: 'active',
+        },
+        { $set: updateData },
+        { new: true }
+      );
+      if (updated) updates.push(updated);
+    }
+
+    await trackUserEvent(req.user.id, 'starter_quests_edited', { editedCount: updates.length });
+
+    res.json({
+      success: true,
+      data: {
+        quests: updates,
+      },
+    });
+  } catch (error) {
+    console.error('Update starter quests error:', error);
+    res.status(500).json({ message: 'Server error updating starter quests' });
   }
 };

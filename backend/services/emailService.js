@@ -182,7 +182,14 @@ export const sendOtpEmail = async ({ to, otp, username }) => {
       await sendWithGmailApi(mailOptions);
       return;
     } catch (error) {
-      errors.push(`gmail-api -> ${error?.code || error?.message || "unknown error"}`);
+      const detail =
+        error?.response?.data?.error?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        error?.code ||
+        "unknown error";
+      const status = error?.response?.status || error?.status || "";
+      errors.push(`gmail-api -> ${status ? `HTTP ${status}: ` : ""}${detail}`);
     }
   } else {
     errors.push("gmail-api -> missing GMAIL_REFRESH_TOKEN (and/or client credentials)");

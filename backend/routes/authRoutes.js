@@ -9,6 +9,9 @@ import {
   login,
   getProfile,
   updateProfile,
+  getOnboardingOptions,
+  setupOnboarding,
+  updateStarterQuests,
 } from "../controllers/authController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -83,6 +86,18 @@ router.post(
 // Protected routes
 router.get("/profile", protect, getProfile);
 router.put("/profile", protect, updateProfile);
+router.get('/onboarding/options', protect, getOnboardingOptions);
+router.post(
+  '/onboarding/setup',
+  protect,
+  [
+    body('primaryClass')
+      .isIn(['scholar', 'warrior', 'builder', 'strategist'])
+      .withMessage('Invalid class selection'),
+  ],
+  setupOnboarding
+);
+router.put('/onboarding/starter-quests', protect, updateStarterQuests);
 
 // --- Google OAuth Routes ---
 

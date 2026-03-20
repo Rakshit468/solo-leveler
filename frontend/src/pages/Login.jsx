@@ -29,7 +29,11 @@ const Login = () => {
 
     if (result.success) {
       toast.success("Welcome back, Hunter!");
-      navigate("/dashboard");
+      if (result.user?.onboarding?.completed) {
+        navigate("/dashboard");
+      } else {
+        navigate("/onboarding");
+      }
     } else {
       toast.error(result.error);
     }

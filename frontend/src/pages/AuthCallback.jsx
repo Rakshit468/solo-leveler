@@ -17,7 +17,11 @@ const AuthCallback = () => {
         const result = await loginWithToken(token);
         if (result.success) {
           toast.success("Successfully logged in!");
-          navigate("/dashboard");
+          if (result.user?.onboarding?.completed) {
+            navigate("/dashboard");
+          } else {
+            navigate("/onboarding");
+          }
         } else {
           toast.error(result.error || "Login failed. Please try again.");
           navigate("/login");

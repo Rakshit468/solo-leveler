@@ -7,7 +7,9 @@ import {
   Clock, 
   Star,
   TrendingUp,
-  Calendar
+  Calendar,
+  Shield,
+  Lock
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { questAPI, statsAPI } from '../services/api'
@@ -57,6 +59,12 @@ const Dashboard = () => {
   const dailyQuests = dashboardData?.quests?.daily || []
   const weeklyQuests = dashboardData?.quests?.weekly || []
   const bossQuests = dashboardData?.quests?.boss || []
+  const progression = dashboardData?.progression || {}
+  const className = progression.primaryClass
+    ? `${progression.primaryClass.charAt(0).toUpperCase()}${progression.primaryClass.slice(1)}`
+    : 'Unassigned'
+  const unlockStreak = progression.dualClassUnlockStreak || 60
+  const currentStreak = user?.streaks?.current || 0
 
   return (
     <div className="space-y-8">
@@ -130,6 +138,43 @@ const Dashboard = () => {
             </div>
             <div className="text-sm text-gray-400">Consistency</div>
           </div>
+        </div>
+      </div>
+
+      <div className="card border-primary-700/50">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm uppercase tracking-wide text-gray-400">Hunter Class</p>
+            <h3 className="text-xl font-semibold text-white mt-1">{className}</h3>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-300">
+            <Shield className="h-4 w-4 text-secondary-400" />
+            <span>{progression.shieldCharges > 0 ? 'Shield Ready' : 'Shield Used'}</span>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <div className="flex items-center gap-2 text-sm text-gray-300">
+            <Lock className="h-4 w-4 text-primary-300" />
+            <span>
+              {progression.dualClassUnlocked
+                ? 'Dual Class unlocked'
+                : `Dual Class unlocks at ${unlockStreak}-day streak`}
+            </span>
+          </div>
+          {!progression.dualClassUnlocked && (
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-dark-700">
+              <div
+                className="h-full bg-gradient-to-r from-primary-500 to-secondary-500"
+                style={{ width: `${Math.min(100, Math.round((currentStreak / unlockStreak) * 100))}%` }}
+              />
+            </div>
+          )}
+          {!progression.dualClassUnlocked && (
+            <p className="mt-2 text-xs text-gray-400">
+              {currentStreak} / {unlockStreak} streak days completed
+            </p>
+          )}
         </div>
       </div>
 

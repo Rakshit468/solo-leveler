@@ -85,7 +85,16 @@ const questSchema = new mongoose.Schema({
     level: { type: Number, default: 1 },
     skills: [String],
     completedQuests: [mongoose.Schema.Types.ObjectId]
-  }
+  },
+  isStarterQuest: {
+    type: Boolean,
+    default: false,
+  },
+  isRecoveryQuest: {
+    type: Boolean,
+    default: false,
+  },
+  templateKey: String,
 }, {
   timestamps: true
 });

@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }) => {
         const { token, user } = response.data.data;
         setAuthToken(token);
         setUser(user);
-        return { success: true };
+        return { success: true, user };
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -141,7 +141,7 @@ export const AuthProvider = ({ children }) => {
         setUser(response.data.data);
         setToken(token);
         setLoading(false);
-        return { success: true };
+        return { success: true, user: response.data.data };
       } else {
         throw new Error("Profile fetch was not successful");
       }
@@ -165,6 +165,7 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
     updateUser,
     loginWithToken,
+    isOnboardingCompleted: Boolean(user?.onboarding?.completed),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

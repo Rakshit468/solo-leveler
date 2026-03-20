@@ -79,6 +79,26 @@ const userSchema = new mongoose.Schema(
       current: { type: Number, default: 0 },
       longest: { type: Number, default: 0 },
       lastActivity: Date,
+      shieldCharges: { type: Number, default: 1, min: 0, max: 1 },
+      shieldLastRefillAt: { type: Date, default: Date.now },
+      shieldLastUsedAt: Date,
+    },
+    onboarding: {
+      completed: { type: Boolean, default: false },
+      completedAt: Date,
+      primaryClass: {
+        type: String,
+        enum: ["scholar", "warrior", "builder", "strategist", null],
+        default: null,
+      },
+      secondaryClass: {
+        type: String,
+        enum: ["scholar", "warrior", "builder", "strategist", null],
+        default: null,
+      },
+      dualClassUnlocked: { type: Boolean, default: false },
+      dualClassUnlockStreak: { type: Number, default: 60 },
+      lastRecoveryQuestAt: Date,
     },
     preferences: {
       theme: {

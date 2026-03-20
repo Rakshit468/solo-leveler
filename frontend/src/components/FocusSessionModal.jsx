@@ -65,7 +65,7 @@ const FocusSessionModal = ({ quest, onClose, onSessionComplete }) => {
               type="button"
               className={`rounded-md px-3 py-1 text-sm ${preset === value ? "bg-primary-500 text-white" : "bg-dark-700 text-gray-300"}`}
               onClick={() => setPreset(value)}
-              disabled={isRunning}
+              disabled={saving}
             >
               {value}m
             </button>
@@ -74,7 +74,7 @@ const FocusSessionModal = ({ quest, onClose, onSessionComplete }) => {
             type="button"
             className={`rounded-md px-3 py-1 text-sm ${preset === "custom" ? "bg-primary-500 text-white" : "bg-dark-700 text-gray-300"}`}
             onClick={() => setPreset("custom")}
-            disabled={isRunning}
+            disabled={saving}
           >
             Custom
           </button>
@@ -86,7 +86,7 @@ const FocusSessionModal = ({ quest, onClose, onSessionComplete }) => {
               value={customMinutes}
               onChange={(event) => setCustomMinutes(event.target.value)}
               className="input h-9 w-20"
-              disabled={isRunning}
+              disabled={saving}
             />
           )}
         </div>

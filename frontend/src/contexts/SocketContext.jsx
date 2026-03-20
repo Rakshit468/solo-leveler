@@ -32,12 +32,6 @@ export const SocketProvider = ({ children }) => {
       newSocket.on("connect", () => {
         console.log("🔌 Connected to server");
         newSocket.emit("join", user.id || user._id);
-        addNotification({
-          type: "success",
-          title: "Connected",
-          message: "Real-time updates are active.",
-          persistent: false,
-        });
       });
 
       newSocket.on("questCompleted", (data) => {
@@ -81,15 +75,16 @@ export const SocketProvider = ({ children }) => {
 
       newSocket.on("reconnect", () => {
         toast.success("Connection restored");
+        addNotification({
+          type: "success",
+          title: "Connection restored",
+          message: "Real-time updates are active again.",
+          persistent: false,
+        });
       });
 
       newSocket.on("connect_error", () => {
-        addNotification({
-          type: "warning",
-          title: "Connection unstable",
-          message: "Trying to reconnect for live updates...",
-          persistent: false,
-        });
+        // Avoid noisy warning spam in notifications; socket.io will auto-retry.
       });
 
       setSocket(newSocket);

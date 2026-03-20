@@ -33,6 +33,11 @@ const Leaderboard = () => {
         (entry, index) => {
           const userPart = entry.user || {};
           const characterPart = entry.character || userPart.character || {};
+          const rawAvatar = characterPart.avatar;
+          const avatar =
+            typeof rawAvatar === "string" && rawAvatar.trim().length > 0
+              ? rawAvatar.split("/").pop()
+              : "shadow-monarch-avatar.svg";
           return {
             id: entry._id || entry.id || index,
             username: entry.username || userPart.username || "Unknown Hunter",
@@ -41,9 +46,11 @@ const Leaderboard = () => {
               entry.username ||
               userPart.username ||
               "Unknown Hunter",
-            avatar: characterPart.avatar || "shadow-monarch-avatar.svg",
-            level: characterPart.level || entry.level || 0,
-            xp: characterPart.xp || entry.score || 0,
+            avatar,
+            level: Number(characterPart.level ?? entry.level ?? 0),
+            xp: Number(
+              characterPart.xp ?? entry.totalXP ?? entry.score ?? 0
+            ),
             gold: characterPart.gold ?? 0,
             rank: entry.rank || index + 1,
           };
@@ -204,6 +211,10 @@ const Leaderboard = () => {
                   src={`/avatars/${leaderboard[1]?.avatar || "shadow-monarch-avatar.svg"}`}
                   alt="avatar"
                   className="w-full h-full object-cover"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = "/avatars/shadow-monarch-avatar.svg";
+                  }}
                 />
               </div>
               <h3 className="font-semibold text-white truncate">
@@ -234,6 +245,10 @@ const Leaderboard = () => {
                   src={`/avatars/${leaderboard[0]?.avatar || "shadow-monarch-avatar.svg"}`}
                   alt="avatar"
                   className="w-full h-full object-cover"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = "/avatars/shadow-monarch-avatar.svg";
+                  }}
                 />
               </div>
               <h3 className="font-semibold text-white truncate">
@@ -264,6 +279,10 @@ const Leaderboard = () => {
                   src={`/avatars/${leaderboard[2]?.avatar || "shadow-monarch-avatar.svg"}`}
                   alt="avatar"
                   className="w-full h-full object-cover"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = "/avatars/shadow-monarch-avatar.svg";
+                  }}
                 />
               </div>
               <h3 className="font-semibold text-white truncate">
@@ -316,6 +335,10 @@ const Leaderboard = () => {
                       src={`/avatars/${entry.avatar}`}
                       alt="avatar"
                       className="w-full h-full object-cover"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = "/avatars/shadow-monarch-avatar.svg";
+                      }}
                     />
                   </div>
 

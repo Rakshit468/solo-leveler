@@ -40,16 +40,35 @@ import challengeRoutes from "./routes/challengeRoutes.js";
 
 const app = express();
 
+const allowedOrigins = [
+  process.env.CORS_ORIGIN,
+  process.env.CLIENT_URL,
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+].filter(Boolean);
+
+const isAllowedOrigin = (origin = "") => {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  return /^https:\/\/[\w-]+\.vercel\.app$/.test(origin);
+};
+
+const validateCorsOrigin = (origin, callback) => {
+  if (isAllowedOrigin(origin)) {
+    return callback(null, true);
+  }
+  return callback(new Error(`Not allowed by CORS: ${origin}`));
+};
+
 // ✅ Trust proxy for Railway/Heroku/etc. (needed for Google OAuth redirects)
 app.set("trust proxy", 1);
 
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: [
-      process.env.CORS_ORIGIN || "http://localhost:5173",
-      "http://localhost:5173", // allow local testing too
-    ],
+    origin: validateCorsOrigin,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   },
@@ -210,10 +229,7 @@ setTimeout(initializeSkills, 1000);
 app.use(helmet());
 app.use(
   cors({
-    origin: [
-      process.env.CORS_ORIGIN || "http://localhost:5173",
-      "http://localhost:5173",
-    ],
+    origin: validateCorsOrigin,
     credentials: true,
   })
 );
